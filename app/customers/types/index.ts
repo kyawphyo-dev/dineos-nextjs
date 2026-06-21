@@ -22,7 +22,7 @@ export type Package = {
   
   export type CartItem = MenuItem & { qty: number };
   
-  export type OrderStatus = 'received' | 'preparing' | 'ready';
+  export type OrderStatus = 'received' | 'preparing' | 'ready' | 'served';
   
   export type OrderItem = {
     name: string;

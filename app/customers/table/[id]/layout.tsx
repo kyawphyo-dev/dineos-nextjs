@@ -1,4 +1,6 @@
+import PageTransition from "@/components/PageTransition";
 import { CartProvider } from "@/context/CartContext";
+import { OrdersProvider } from "@/context/OrdersContext";
 
 export default function RootLayout({
   children,
@@ -8,8 +10,10 @@ export default function RootLayout({
   return (
     <html>
       <body>
-        <CartProvider>
-          {children}
+      <CartProvider>
+          <OrdersProvider>
+            <PageTransition>{children}</PageTransition>
+          </OrdersProvider>
         </CartProvider>
       </body>
     </html>

@@ -1,5 +1,6 @@
 "use client";
 
+import PageTransition from "@/components/PageTransition";
 import { TablesProvider } from "@/context/TablesContext";
 
 export default function Layout({
@@ -9,7 +10,8 @@ export default function Layout({
 }) {
   return (
     <TablesProvider>
-      {children}
+      <PageTransition>{children}</PageTransition>
+      
     </TablesProvider>
   );
 }
