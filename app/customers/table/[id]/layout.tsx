@@ -8,14 +8,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html>
-      <body>
+
+
       <CartProvider>
           <OrdersProvider>
             <PageTransition>{children}</PageTransition>
           </OrdersProvider>
         </CartProvider>
-      </body>
-    </html>
+
+
   );
 }

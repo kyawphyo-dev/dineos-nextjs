@@ -50,7 +50,13 @@ export const INITIAL_TABLES: RestaurantTable[] = [
     meta: "Seated 5m",
     session: { packageId: "dine-in-set", packageName: "Dine-in Set Menu", guestCount: 2, startedAt: "5 min ago" },
   },
-  { id: "A-09", seats: 4, status: "reserved", meta: "Reserved 7pm" },
+  {
+    id: "A-09",
+    seats: 4,
+    status: "reserved",
+    meta: "Reserved 7:00 PM",
+    reservation: { name: "Khun Anan", time: "7:00 PM" },
+  },
   { id: "A-10", seats: 4, status: "available", meta: "4 seats" },
   { id: "A-11", seats: 2, status: "available", meta: "2 seats" },
   {
