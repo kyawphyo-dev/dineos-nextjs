@@ -7,6 +7,64 @@ import { useOrders } from "@/context/OrdersContext";
 import ROUTES from "@/route";
 import OrderCard from "@/app/customers/components/OrderCard";
 
+
+
+export default function OrdersPage() {
+  const router = useRouter();
+  const { orders } = useOrders();
+
+  // Show most recently placed orders first
+  const sortedOrders = [...orders].reverse();
+
+  return (
+    <div className="flex flex-col min-h-screen bg-cream">
+
+      <div className="bg-bark px-5 py-3 flex items-center gap-3">
+        <button
+          onClick={() => router.push("/menu")}
+          className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/10"
+        >
+          <ChevronLeft className="w-4 h-4 text-white/80" />
+        </button>
+        <span className="text-[16px] font-medium text-white">My Orders</span>
+        <span className="ml-auto text-[12px] text-white/55">Table A-07</span>
+      </div>
+
+      <div className="flex-1 px-5 py-4 flex flex-col gap-3">
+        {sortedOrders.map((order) => (
+          <OrderCard key={order.id} order={order} />
+        ))}
+        {sortedOrders.length === 0 && (
+          <div className="text-center py-16 text-text-hint text-[14px]">
+            No orders yet. Place an order from the menu to see it here.
+          </div>
+        )}
+      </div>
+
+      <div className="px-5 py-4 flex flex-col gap-2.5 border-t border-black/8 bg-cream">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => router.push(ROUTES.CUSTOMER_MENU("A-07"))}
+          className="w-full border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Order more
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors"
+        >
+          <Receipt className="w-4 h-4" />
+          Request bill
+        </motion.button>
+      </div>
+    </div>
+  );
+}
+
+
+
+
 // const STATUS_STEPS: { key: OrderStatus; label: string }[] = [
 //   { key: "received", label: "Order received" },
 //   { key: "preparing", label: "Kitchen preparing" },
@@ -117,56 +175,3 @@ import OrderCard from "@/app/customers/components/OrderCard";
 //     </div>
 //   );
 // }
-
-export default function OrdersPage() {
-  const router = useRouter();
-  const { orders } = useOrders();
-
-  // Show most recently placed orders first
-  const sortedOrders = [...orders].reverse();
-
-  return (
-    <div className="flex flex-col min-h-screen bg-cream">
-
-      <div className="bg-bark px-5 py-3 flex items-center gap-3">
-        <button
-          onClick={() => router.push("/menu")}
-          className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/10"
-        >
-          <ChevronLeft className="w-4 h-4 text-white/80" />
-        </button>
-        <span className="text-[16px] font-medium text-white">My Orders</span>
-        <span className="ml-auto text-[12px] text-white/55">Table A-07</span>
-      </div>
-
-      <div className="flex-1 px-5 py-4 flex flex-col gap-3">
-        {sortedOrders.map((order) => (
-          <OrderCard key={order.id} order={order} />
-        ))}
-        {sortedOrders.length === 0 && (
-          <div className="text-center py-16 text-text-hint text-[14px]">
-            No orders yet. Place an order from the menu to see it here.
-          </div>
-        )}
-      </div>
-
-      <div className="px-5 py-4 flex flex-col gap-2.5 border-t border-black/8 bg-cream">
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={() => router.push(ROUTES.CUSTOMER_MENU("A-07"))}
-          className="w-full border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          Order more
-        </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors"
-        >
-          <Receipt className="w-4 h-4" />
-          Request bill
-        </motion.button>
-      </div>
-    </div>
-  );
-}

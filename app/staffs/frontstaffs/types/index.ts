@@ -15,10 +15,16 @@ export type TableSession = {
   startedAt: string;
 };
 
+export type Reservation = {
+  name: string;
+  time: string;
+};
+
 export type RestaurantTable = {
   id: string;
   seats: number;
   status: TableStatus;
   meta: string;
   session?: TableSession;
+  reservation?: Reservation;
 };

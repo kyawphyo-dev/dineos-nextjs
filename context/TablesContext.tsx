@@ -2,13 +2,15 @@
 
 import { createContext, useContext, useState, ReactNode } from "react";
 import { INITIAL_TABLES } from "@/app/staffs/frontstaffs/data/mock";
-import type { RestaurantTable, TableSession } from "@/app/staffs/frontstaffs/types";
+import type { RestaurantTable, Reservation, TableSession } from "@/app/staffs/frontstaffs/types";
 
 interface TablesContextValue {
   tables: RestaurantTable[];
   getTable: (id: string) => RestaurantTable | undefined;
   startSession: (tableId: string, session: TableSession) => void;
   closeSession: (tableId: string) => void;
+  reserveTable: (tableId: string, reservation: Reservation) => void;
+  cancelReservation: (tableId: string) => void;
 }
 
 const TablesContext = createContext<TablesContextValue | undefined>(undefined);
@@ -22,7 +24,7 @@ export function TablesProvider({ children }: { children: ReactNode }) {
     setTables((prev) =>
       prev.map((t) =>
         t.id === tableId
-          ? { ...t, status: "occupied", meta: "Seated just now", session }
+          ? { ...t, status: "occupied", meta: "Seated just now", session, reservation: undefined }
           : t
       )
     );
@@ -38,8 +40,30 @@ export function TablesProvider({ children }: { children: ReactNode }) {
     );
   };
 
+  const reserveTable = (tableId: string, reservation: Reservation) => {
+    setTables((prev) =>
+      prev.map((t) =>
+        t.id === tableId
+          ? { ...t, status: "reserved", meta: `Reserved ${reservation.time}`, reservation }
+          : t
+      )
+    );
+  };
+
+  const cancelReservation = (tableId: string) => {
+    setTables((prev) =>
+      prev.map((t) =>
+        t.id === tableId
+          ? { ...t, status: "available", meta: `${t.seats} seats`, reservation: undefined }
+          : t
+      )
+    );
+  };
+
   return (
-    <TablesContext.Provider value={{ tables, getTable, startSession, closeSession }}>
+    <TablesContext.Provider
+      value={{ tables, getTable, startSession, closeSession, reserveTable, cancelReservation }}
+    >
       {children}
     </TablesContext.Provider>
   );
