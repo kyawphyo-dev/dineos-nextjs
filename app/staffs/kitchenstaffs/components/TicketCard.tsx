@@ -1,9 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useElapsed } from "@/app/hooks/useElapsed";
-import { getNextStatus } from "@/app/context/TicketsContext";
-import type { Ticket } from "@/app/types";
+import { useElapsed } from "../hooks/useElapsed";
+import { getNextStatus } from "@/context/TicketsContext";
+import type { Ticket } from "../types";
 
 const ACTION_LABEL: Record<string, string> = {
   preparing: "Start preparing",

@@ -1,8 +1,8 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import TicketCard from "@/app/components/TicketCard";
-import type { OrderStatus, Ticket } from "@/app/types";
+import TicketCard from "../components/TicketCard";
+import type { OrderStatus, Ticket } from "../types";
 
 const COLUMN_META: Record<OrderStatus, { label: string; textClass: string; badgeClass: string }> = {
   new: { label: "New", textClass: "text-info", badgeClass: "bg-info-light text-info" },

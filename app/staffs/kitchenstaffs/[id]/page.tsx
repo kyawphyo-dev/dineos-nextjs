@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import { ChefHat } from "lucide-react";
-import StationTabs from "@/app/components/StationTabs";
-import ViewToggle from "@/app/components/ViewToggle";
-import KanbanColumn from "@/app/components/KanbanColumn";
-import DishView from "@/app/components/DishView";
-import { useTickets } from "@/app/context/TicketsContext";
-import type { OrderStatus, ViewMode } from "@/app/types";
+import StationTabs from "../components/StationTabs";
+import ViewToggle from "../components/ViewToggle";
+import KanbanColumn from "../components/KanbanColumn";
+import DishView from "../components/DishView";
+import { useTickets } from "@/context/TicketsContext";
+import type { OrderStatus, ViewMode } from "../types";
 
 const COLUMNS: OrderStatus[] = ["new", "preparing", "ready"];
 

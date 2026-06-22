@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { TicketsProvider } from "@/app/context/TicketsContext";
+import { TicketsProvider } from "@/context/TicketsContext";
 
 export const metadata: Metadata = {
   title: "DineOS — Kitchen Staff",
