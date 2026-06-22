@@ -1,6 +1,6 @@
 "use client";
 
-import type { ViewMode } from "@/app/types";
+import type { ViewMode } from "../types";
 
 interface Props {
   mode: ViewMode;

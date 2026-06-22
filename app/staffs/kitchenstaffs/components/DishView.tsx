@@ -1,6 +1,6 @@
 "use client";
 
-import type { Ticket } from "@/app/types";
+import type { Ticket } from "../types";
 
 interface AggregatedDish {
   name: string;

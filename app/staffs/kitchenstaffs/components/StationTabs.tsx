@@ -1,6 +1,6 @@
 "use client";
 
-import { STATIONS } from "@/app/data/mock";
+import { STATIONS } from "../data/mock";
 
 interface Props {
   active: string;
