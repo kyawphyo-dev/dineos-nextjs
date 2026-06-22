@@ -8,7 +8,7 @@ import AvailableTablePanel from "../components/AvailableTablePanel";
 import QrHandoffCard from "../components/QrHandoffCard";
 import ReservationCard from "../components/ReservationCard";
 import { useTables } from "@/context/TablesContext";
-import type { Package, Reservation } from "../frontstaffs/types";
+import type { Package, Reservation } from "../types";
 
 export default function StaffDashboard() {
   const { tables, getTable, startSession, closeSession, reserveTable, cancelReservation } =
