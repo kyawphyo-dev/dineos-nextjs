@@ -14,6 +14,7 @@ export function useElapsed(placedAt: number): string {
     return () => clearInterval(interval);
   }, []);
 
+  // eslint-disable-next-line react-hooks/purity
   const diffMs = Date.now() - placedAt;
   const minutes = Math.floor(diffMs / 60_000);
 
