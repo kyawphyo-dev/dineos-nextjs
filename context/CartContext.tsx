@@ -1,19 +1,18 @@
 "use client";
-// ( can share cart state across menu and cart page)
+
 import { createContext, useContext, useState, ReactNode } from "react";
-import { CartItem,MenuItem } from "@/app//types";
+import type { CartItem, CustomerMenuItem } from "@/app/types/customer";
 
 interface CartContextValue {
   cart: CartItem[];
   totalItems: number;
   totalPrice: number;
   getQty: (id: string) => number;
-  addItem: (item: MenuItem) => void;
-  removeItem: (item: MenuItem) => void;
+  addItem: (item: CustomerMenuItem) => void;
+  removeItem: (item: CustomerMenuItem) => void;
   setCart: (items: CartItem[]) => void;
   clearCart: () => void;
 }
-
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
@@ -25,7 +24,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const getQty = (id: string) => cart.find((c) => c.id === id)?.qty ?? 0;
 
-  const addItem = (item: MenuItem) => {
+  const addItem = (item: CustomerMenuItem) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.id === item.id);
       if (existing) {
@@ -35,7 +34,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeItem = (item: MenuItem) => {
+  const removeItem = (item: CustomerMenuItem) => {
     setCart((prev) => {
       const existing = prev.find((c) => c.id === item.id);
       if (!existing) return prev;

@@ -1,11 +1,11 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { MOCK_ORDERS } from "@/app/customers/data/mock";
-import type { CartItem, Order } from "@/app/customers/types";
+import { MOCK_CUSTOMER_ORDERS } from "@/app/data/customer-mock";
+import type { CartItem, CustomerOrder } from "@/app/types/customer";
 
 interface OrdersContextValue {
-  orders: Order[];
+  orders: CustomerOrder[];
   placeOrder: (items: CartItem[]) => void;
 }
 
@@ -14,11 +14,11 @@ const OrdersContext = createContext<OrdersContextValue | undefined>(undefined);
 let orderCounter = 1033;
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
+  const [orders, setOrders] = useState<CustomerOrder[]>(MOCK_CUSTOMER_ORDERS);
 
   const placeOrder = (items: CartItem[]) => {
     if (items.length === 0) return;
-    const newOrder: Order = {
+    const newOrder: CustomerOrder = {
       id: String(orderCounter++),
       status: "received",
       placedAt: "Just now",

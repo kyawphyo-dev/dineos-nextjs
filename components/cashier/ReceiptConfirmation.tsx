@@ -2,8 +2,8 @@
 
 import { Check, Printer, Download } from "lucide-react";
 import { motion } from "framer-motion";
-import Receipt from "@/app/components/cashier/Receipt";
-import { downloadReceiptAsPdf } from "@/app/lib/downloadReceipt";
+import Receipt from "@/components/cashier/Receipt";
+import { downloadReceiptAsPdf } from "@/lib/downloadReceipt";
 import type { ReceiptRecord } from "@/app/types/cashier";
 
 interface Props {

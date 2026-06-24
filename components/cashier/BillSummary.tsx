@@ -1,7 +1,7 @@
 "use client";
 
 import type { DiningSession, Discount } from "@/app/types/cashier";
-import { calculateBill } from "@/app/context/SessionsContext";
+import { calculateBill } from "@/context/SessionsContext";
 
 interface Props {
   session: DiningSession;

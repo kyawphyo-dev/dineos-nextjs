@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import StartSessionPanel from "@/app/components/staff/StartSessionPanel";
-import ReservePanel from "@/app/components/staff/ReservePanel";
+import StartSessionPanel from "@/components/staff/StartSessionPanel";
+import ReservePanel from "@/components/staff/ReservePanel";
 import type { StaffPackage, Reservation } from "@/app/types/staff";
 
 type Tab = "start" | "reserve";

@@ -13,7 +13,7 @@ import {
   Lock,
   Wallet,
 } from "lucide-react";
-import { useRole } from "@/app/context/RoleContext";
+import { useRole } from "@/context/RoleContext";
 
 const NAV_SECTIONS = [
   {
@@ -44,12 +44,12 @@ export default function Sidebar() {
 
   return (
     <div className="w-[220px] bg-cream-dark border-r border-black/8 flex-shrink-0 px-3 py-4 hidden md:flex md:flex-col">
-      <div className="flex items-center gap-2 px-2 pb-1">
+      <Link href="/admin" className="flex items-center gap-2 px-2 pb-1">
         <div className="w-7 h-7 rounded-lg bg-bark flex items-center justify-center flex-shrink-0">
           <ChefHat className="w-3.5 h-3.5 text-white" />
         </div>
         <span className="text-[13px] font-semibold text-text-primary">DineOS Admin</span>
-      </div>
+      </Link>
       <p className="text-[10px] text-text-hint px-2 pb-3 capitalize">Signed in as {role}</p>
 
       <nav className="flex-1 overflow-y-auto">

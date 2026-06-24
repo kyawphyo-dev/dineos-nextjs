@@ -1,6 +1,6 @@
 "use client";
 
-import UserMenu from "@/app/components/admin/UserMenu";
+import UserMenu from "@/components/admin/UserMenu";
 import type { ReactNode } from "react";
 
 interface Props {

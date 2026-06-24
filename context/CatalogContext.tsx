@@ -3,25 +3,25 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import {
   INITIAL_CATEGORIES,
-  INITIAL_MENU_ITEMS,
-  INITIAL_PACKAGES,
-  INITIAL_TABLES,
-} from "@/app/admin/data/mock";
-import type { MenuCategory, MenuItem, Package, RestaurantTable } from "@/app/admin/types";
+  INITIAL_ADMIN_MENU_ITEMS,
+  INITIAL_ADMIN_PACKAGES,
+  INITIAL_ADMIN_TABLES,
+} from "@/app/data/admin-mock";
+import type { MenuCategory, AdminMenuItem, AdminPackage, AdminTable } from "@/app/types/admin";
 
 interface CatalogContextValue {
   categories: MenuCategory[];
-  menuItems: MenuItem[];
-  packages: Package[];
-  tables: RestaurantTable[];
+  menuItems: AdminMenuItem[];
+  packages: AdminPackage[];
+  tables: AdminTable[];
   addCategory: (name: string) => void;
   removeCategory: (id: string) => void;
-  addMenuItem: (item: Omit<MenuItem, "id">) => void;
+  addMenuItem: (item: Omit<AdminMenuItem, "id">) => void;
   toggleMenuItemAvailable: (id: string) => void;
   removeMenuItem: (id: string) => void;
-  addPackage: (pkg: Omit<Package, "id">) => void;
+  addPackage: (pkg: Omit<AdminPackage, "id">) => void;
   removePackage: (id: string) => void;
-  addTable: (table: Omit<RestaurantTable, never>) => void;
+  addTable: (table: Omit<AdminTable, never>) => void;
   removeTable: (id: string) => void;
 }
 
@@ -33,9 +33,9 @@ let packageCounter = 100;
 
 export function CatalogProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<MenuCategory[]>(INITIAL_CATEGORIES);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(INITIAL_MENU_ITEMS);
-  const [packages, setPackages] = useState<Package[]>(INITIAL_PACKAGES);
-  const [tables, setTables] = useState<RestaurantTable[]>(INITIAL_TABLES);
+  const [menuItems, setMenuItems] = useState<AdminMenuItem[]>(INITIAL_ADMIN_MENU_ITEMS);
+  const [packages, setPackages] = useState<AdminPackage[]>(INITIAL_ADMIN_PACKAGES);
+  const [tables, setTables] = useState<AdminTable[]>(INITIAL_ADMIN_TABLES);
 
   const addCategory = (name: string) => {
     setCategories((prev) => [...prev, { id: `c${categoryCounter++}`, name, itemCount: 0 }]);
@@ -45,7 +45,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     setCategories((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const addMenuItem = (item: Omit<MenuItem, "id">) => {
+  const addMenuItem = (item: Omit<AdminMenuItem, "id">) => {
     setMenuItems((prev) => [...prev, { ...item, id: `m${menuItemCounter++}` }]);
   };
 
@@ -59,7 +59,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     setMenuItems((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const addPackage = (pkg: Omit<Package, "id">) => {
+  const addPackage = (pkg: Omit<AdminPackage, "id">) => {
     setPackages((prev) => [...prev, { ...pkg, id: `p${packageCounter++}` }]);
   };
 
@@ -67,7 +67,7 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     setPackages((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const addTable = (table: RestaurantTable) => {
+  const addTable = (table: AdminTable) => {
     setTables((prev) => [...prev, table]);
   };
 

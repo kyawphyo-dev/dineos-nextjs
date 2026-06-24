@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { INITIAL_SESSIONS, INITIAL_RECEIPTS } from "@/app/staffs/cashiers/data/mock";
-import type { DiningSession, Discount, PaymentMethod, ReceiptRecord } from "@/app/staffs/cashiers/types";
+import { INITIAL_SESSIONS, INITIAL_RECEIPTS } from "@/app/data/cashier-mock";
+import type { DiningSession, Discount, PaymentMethod, ReceiptRecord } from "@/app/types/cashier";
 
 interface SessionsContextValue {
   sessions: DiningSession[];

@@ -1,12 +1,12 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
-import { INITIAL_TABLES } from "@/app/staffs/frontstaffs/data/mock";
-import type { RestaurantTable, Reservation, TableSession } from "@/app/staffs/frontstaffs/types";
+import { INITIAL_TABLES } from "@/app/data/staff-mock";
+import type { FrontTable, Reservation, TableSession } from "@/app/types/staff";
 
 interface TablesContextValue {
-  tables: RestaurantTable[];
-  getTable: (id: string) => RestaurantTable | undefined;
+  tables: FrontTable[];
+  getTable: (id: string) => FrontTable | undefined;
   startSession: (tableId: string, session: TableSession) => void;
   closeSession: (tableId: string) => void;
   reserveTable: (tableId: string, reservation: Reservation) => void;
@@ -16,7 +16,7 @@ interface TablesContextValue {
 const TablesContext = createContext<TablesContextValue | undefined>(undefined);
 
 export function TablesProvider({ children }: { children: ReactNode }) {
-  const [tables, setTables] = useState<RestaurantTable[]>(INITIAL_TABLES);
+  const [tables, setTables] = useState<FrontTable[]>(INITIAL_TABLES);
 
   const getTable = (id: string) => tables.find((t) => t.id === id);
 

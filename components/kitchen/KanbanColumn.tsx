@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence } from "framer-motion";
-import TicketCard from "@/app/components/kitchen/TicketCard";
+import TicketCard from "@/components/kitchen/TicketCard";
 import type { TicketStatus, Ticket } from "@/app/types/kitchen";
 
 const COLUMN_META: Record<TicketStatus, { label: string; textClass: string; badgeClass: string }> = {

@@ -40,7 +40,7 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[380px] bg-white rounded-2xl border border-black/8 p-8"
+        className="w-full max-w-95 bg-white rounded-2xl border border-black/8 p-8"
       >
         <div className="flex justify-center mb-3">
           <div className="w-10 h-10 rounded-xl bg-bark flex items-center justify-center">
