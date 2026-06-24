@@ -1,7 +1,7 @@
 "use client";
 // ( can share cart state across menu and cart page)
 import { createContext, useContext, useState, ReactNode } from "react";
-import { CartItem,MenuItem } from "@/app/customers/types";
+import { CartItem,MenuItem } from "@/app//types";
 
 interface CartContextValue {
   cart: CartItem[];

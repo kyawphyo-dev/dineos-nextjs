@@ -21,11 +21,35 @@
   --color-text-muted: #7A6458;
   --color-text-hint: #B09A8C;
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background-color: var(--color-cream);
+  background-color: var(--color-cream-dark);
   color: var(--color-text-primary);
   font-family: var(--font-sans), Arial, sans-serif;
+}
+
+/*
+ * Print isolation: when printing, hide everything in the document body
+ * except the element with class "receipt-print-area". Used by the
+ * cashier receipt component so window.print() only outputs the receipt.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .receipt-print-area,
+  .receipt-print-area * {
+    visibility: visible;
+  }
+  .receipt-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: 340px;
+    margin: 0 auto;
+    border: none !important;
+    box-shadow: none !important;
+  }
 }
