@@ -1,4 +1,8 @@
-import type { CustomerPackage, CustomerMenuItem, CustomerOrder } from "@/app/types/customer";
+import type {
+  CustomerPackage,
+  CustomerMenuItem,
+  CustomerOrder,
+} from "@/app/types/customer";
 
 export const CUSTOMER_PACKAGES: CustomerPackage[] = [
   {
