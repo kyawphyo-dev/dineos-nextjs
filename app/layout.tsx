@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { AuthProvider } from "@/context/AuthContext";
+import AuthSessionProvider from "@/components/shared/AuthSessionProvider";
 
 export const metadata: Metadata = {
   title: "DineOS",
-  description: "Restaurant management platform — ordering, kitchen, cashier, and admin",
+  description:
+    "Restaurant management platform — ordering, kitchen, cashier, and admin",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="en">
       <body className="antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <AuthSessionProvider>{children}</AuthSessionProvider>
       </body>
     </html>
   );
