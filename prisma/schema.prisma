@@ -11,33 +11,33 @@ datasource db {
 
 
 enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PREPARING
-  SERVED
-  COMPLETED
-  CANCELLED
+  pending 
+  confirm
+  preparing
+  served
+  completed
+  cancelled
 }
 
 enum UserRole {
-  OWNER
-  MANAGER
-  FRONT_STAFF
-  CASHIER
-  KITCHEN
+  owner
+  manager 
+  front_staff
+  cashier
+  kitchen
 }
 
 enum TableStatus {
-  AVAILABLE
-  OCCUPIED
-  RESERVED
+  available
+  occupied 
+  reserved 
 }
 
 enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
+  pending
+  paid
+  failed
+  refunded
 }
 
 model Company {
@@ -84,11 +84,12 @@ model Branch {
 model User {
   id            String      @id @default(cuid())
   name          String
+  username      String      @unique
   email         String      @unique
-  password      String
-
+  hashedPassword String
+  hashedPin      String
   role          UserRole
-
+  
   branchId       String?
   branch         Branch?  @relation(fields: [branchId], references: [id])
 
@@ -115,7 +116,7 @@ model Table {
   id            String        @id @default(cuid())
   tableNumber   String
   capacity      Int
-  status        TableStatus   @default(AVAILABLE)
+  status        TableStatus   @default(available)
   session       Boolean
   qr            String @unique
 
@@ -196,7 +197,7 @@ model Order {
   tableId    String?
   sessionId  String?
 
-  status OrderStatus @default(PENDING)
+  status OrderStatus @default(pending)
 
   totalAmount Decimal @default(0)
 
@@ -240,7 +241,7 @@ model Payment {
   sessionId String
 
   amount    Decimal
-  status    PaymentStatus @default(PENDING)
+  status    PaymentStatus @default(pending)
   methodId    String? // cash, card, qr
   paymentmethod  PaymentMethod? @relation( fields: [methodId], references: [id])
 
