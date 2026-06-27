@@ -34,6 +34,7 @@ export type CustomerOrderItem = {
 
 export type CustomerOrder = {
   id: string;
+  tableId: string;
   status: CustomerOrderStatus;
   placedAt: string;
   estimatedMin: number;

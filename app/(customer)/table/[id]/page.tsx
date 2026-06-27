@@ -1,16 +1,27 @@
+// app/(customer)/table/[id]/page.tsx
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { ArrowRight, QrCode, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import StatusBar from "@/components/shared/StatusBar";
 import { CUSTOMER_PACKAGES } from "@/app/data/customer-mock";
+import { useCart } from "@/context/CartContext";
 import type { CustomerPackage } from "@/app/types/customer";
 
 export default function LandingPage() {
   const router = useRouter();
+  const params = useParams();
+  const tableId = params.id as string;
+  const { setTableId } = useCart();
+
   const [selected, setSelected] = useState<string>(CUSTOMER_PACKAGES[0].id);
+
+  // Record which table this session belongs to as soon as the QR lands here.
+  useEffect(() => {
+    setTableId(tableId);
+  }, [tableId, setTableId]);
 
   return (
     <div className="flex flex-col min-h-screen bg-cream">
@@ -20,16 +31,22 @@ export default function LandingPage() {
         <div className="absolute top-0 right-0 w-36 h-36 rounded-full bg-clay opacity-10 translate-x-8 -translate-y-8" />
         <div className="flex items-center gap-2 mb-4">
           <QrCode className="w-3.5 h-3.5 text-white/60" />
-          <span className="text-[11px] text-white/60 font-medium">QR scanned</span>
+          <span className="text-[11px] text-white/60 font-medium">
+            QR scanned
+          </span>
         </div>
         <h1 className="text-[22px] font-medium text-white leading-snug">
-          Baan Rim Naam<br />Thai Kitchen
+          Baan Rim Naam
+          <br />
+          Thai Kitchen
         </h1>
-        <p className="text-[13px] text-clay-mid mt-1">Sukhumvit, Bangkok · Open until 10 PM</p>
+        <p className="text-[13px] text-clay-mid mt-1">
+          Sukhumvit, Bangkok · Open until 10 PM
+        </p>
         <div className="mt-4 inline-flex items-center gap-2 bg-clay rounded-xl px-3.5 py-2">
           <span className="text-[11px] text-white/75">Table</span>
           <span className="w-px h-4 bg-white/25" />
-          <span className="text-[15px] font-medium text-white">A-07</span>
+          <span className="text-[15px] font-medium text-white">{tableId}</span>
         </div>
       </div>
 
@@ -48,7 +65,7 @@ export default function LandingPage() {
 
         <motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={() => router.push("/menu")}
+          onClick={() => router.push(`/table/${tableId}/menu`)}
           className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors"
         >
           <ArrowRight className="w-4 h-4" />
@@ -78,7 +95,9 @@ function PackageCard({
       whileTap={{ scale: 0.98 }}
       onClick={onSelect}
       className={`w-full text-left bg-white rounded-2xl border p-4 transition-all ${
-        selected ? "border-clay shadow-[0_0_0_2px_rgba(196,113,74,0.2)]" : "border-black/10"
+        selected
+          ? "border-clay shadow-[0_0_0_2px_rgba(196,113,74,0.2)]"
+          : "border-black/10"
       }`}
     >
       <div className="flex items-center gap-3">
@@ -86,8 +105,12 @@ function PackageCard({
           {pkg.emoji}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-medium text-text-primary">{pkg.name}</p>
-          <p className="text-[12px] text-text-muted mt-0.5">{pkg.description}</p>
+          <p className="text-[15px] font-medium text-text-primary">
+            {pkg.name}
+          </p>
+          <p className="text-[12px] text-text-muted mt-0.5">
+            {pkg.description}
+          </p>
         </div>
         <div className="text-right flex-shrink-0">
           <p className="text-[18px] font-medium text-clay-dark">฿{pkg.price}</p>

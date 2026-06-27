@@ -1,6 +1,6 @@
 const ROUTES = {
   ADMIN_DASHBOARD: "http://localhost:3000/admin",
-  ADMIN_CATEGORY: "http://localhost:3000/admin/category",
+  ADMIN_CATEGORY: "http://localhost:3000/admin/categories",
   ADMIN_MENU: "http://localhost:3000/admin/menu",
   ADMIN_PACKAGES: "http://localhost:3000/admin/packages",
   ADMIN_TABLES: "http://localhost:3000/admin/tables",
@@ -16,9 +16,9 @@ const ROUTES = {
   FRONT_STAFF_DASHBOARD: "http://localhost:3000/staff",
 
   CUSTOMER_LANDING: (id: string) => `http://localhost:3000/table/${id}`,
-  CUSTOMER_MENUS: "http://localhost:3000/menu",
-  CUSTOMER_CART: "http://localhost:3000/cart",
-  CUSTOMER_ORDERS: "http://localhost:3000/orders",
+  CUSTOMER_MENUS: (id: string) => `http://localhost:3000/table/${id}/menu`,
+  CUSTOMER_CART: (id: string) => `http://localhost:3000/table/${id}/cart`,
+  CUSTOMER_ORDERS: (id: string) => `http://localhost:3000/table/${id}/orders`,
 };
 
 export default ROUTES;
