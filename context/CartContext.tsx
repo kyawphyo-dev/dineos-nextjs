@@ -1,3 +1,4 @@
+// app/context/CartContext.tsx
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
@@ -5,6 +6,7 @@ import type { CartItem, CustomerMenuItem } from "@/app/types/customer";
 
 interface CartContextValue {
   cart: CartItem[];
+  tableId: string | null;
   totalItems: number;
   totalPrice: number;
   getQty: (id: string) => number;
@@ -12,12 +14,14 @@ interface CartContextValue {
   removeItem: (item: CustomerMenuItem) => void;
   setCart: (items: CartItem[]) => void;
   clearCart: () => void;
+  setTableId: (id: string) => void;
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [tableId, setTableId] = useState<string | null>(null);
 
   const totalItems = cart.reduce((sum, i) => sum + i.qty, 0);
   const totalPrice = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
@@ -28,7 +32,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCart((prev) => {
       const existing = prev.find((c) => c.id === item.id);
       if (existing) {
-        return prev.map((c) => (c.id === item.id ? { ...c, qty: c.qty + 1 } : c));
+        return prev.map((c) =>
+          c.id === item.id ? { ...c, qty: c.qty + 1 } : c,
+        );
       }
       return [...prev, { ...item, qty: 1 }];
     });
@@ -47,7 +53,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ cart, totalItems, totalPrice, getQty, addItem, removeItem, setCart, clearCart }}
+      value={{
+        cart,
+        tableId,
+        totalItems,
+        totalPrice,
+        getQty,
+        addItem,
+        removeItem,
+        setCart,
+        clearCart,
+        setTableId,
+      }}
     >
       {children}
     </CartContext.Provider>

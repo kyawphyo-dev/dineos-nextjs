@@ -1,3 +1,4 @@
+// app/context/OrdersContext.tsx
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
@@ -6,7 +7,7 @@ import type { CartItem, CustomerOrder } from "@/app/types/customer";
 
 interface OrdersContextValue {
   orders: CustomerOrder[];
-  placeOrder: (items: CartItem[]) => void;
+  placeOrder: (items: CartItem[], tableId: string) => void;
 }
 
 const OrdersContext = createContext<OrdersContextValue | undefined>(undefined);
@@ -16,10 +17,11 @@ let orderCounter = 1033;
 export function OrdersProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<CustomerOrder[]>(MOCK_CUSTOMER_ORDERS);
 
-  const placeOrder = (items: CartItem[]) => {
+  const placeOrder = (items: CartItem[], tableId: string) => {
     if (items.length === 0) return;
     const newOrder: CustomerOrder = {
       id: String(orderCounter++),
+      tableId,
       status: "received",
       placedAt: "Just now",
       estimatedMin: 12,
