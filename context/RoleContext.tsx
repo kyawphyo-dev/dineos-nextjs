@@ -2,7 +2,6 @@
 
 import { createContext, useContext, ReactNode } from "react";
 import { useSession } from "next-auth/react";
-import type { StaffRole } from "@/lib/auth";
 
 type AdminViewRole = "owner" | "manager";
 

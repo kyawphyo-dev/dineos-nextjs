@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,9 +8,187 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model Company {
+  id           String       @id @default(cuid())
+  name         String
+  subscription String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  restaurants  Restaurant[]
+}
+
+model Restaurant {
+  id        String   @id @default(cuid())
+  name      String
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  branches  Branch[]
+  company   Company  @relation(fields: [companyId], references: [id])
+  user      User[]
+}
+
+model Branch {
+  id             String          @id @default(cuid())
+  name           String
+  location       String?
+  restaurantId   String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  restaurant     Restaurant      @relation(fields: [restaurantId], references: [id])
+  menus          Menu[]
+  orders         Order[]
+  paymentMethods PaymentMethod[]
+  tables         Table[]
+  user           User[]
+  zone           Zone[]
+}
+
+model User {
+  id             String      @id @default(cuid())
+  name           String
+  email          String      @unique
+  role           UserRole
+  branchId       String?
+  restaurantId   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  username       String      @unique
+  hashedPassword String
+  hashedPin      String
+  branch         Branch?     @relation(fields: [branchId], references: [id])
+  restaurant     Restaurant? @relation(fields: [restaurantId], references: [id])
+}
+
+model Zone {
+  id        String   @id @default(cuid())
+  name      String
+  branchId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tables    Table[]
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+}
+
+model Table {
+  id           String         @id @default(cuid())
+  tableNumber  String
+  capacity     Int
+  status       TableStatus    @default(available)
+  session      Boolean
+  qr           String         @unique
+  branchId     String?
+  zoneId       String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  order        Order[]
+  payment      Payment[]
+  branch       Branch?        @relation(fields: [branchId], references: [id])
+  zone         Zone           @relation(fields: [zoneId], references: [id])
+  tableSession tableSession[]
+
+  @@unique([branchId, tableNumber])
+}
+
+model tableSession {
+  id            String    @id @default(cuid())
+  tableId       String
+  sessionStatus Boolean
+  startAt       DateTime  @default(now())
+  endAt         DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  orders        Order[]
+  payments      Payment[]
+  table         Table     @relation(fields: [tableId], references: [id])
+}
+
+model Menu {
+  id         String     @id @default(cuid())
+  name       String
+  branchId   String
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  categories Category[]
+  branch     Branch     @relation(fields: [branchId], references: [id])
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  menuId    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  menu      Menu       @relation(fields: [menuId], references: [id])
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id          String      @id @default(cuid())
+  name        String
+  price       Decimal
+  description String?
+  imageUrl    String?
+  categoryId  String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  category    Category    @relation(fields: [categoryId], references: [id])
+  orderItems  OrderItem[]
+}
+
+model Order {
+  id          String        @id @default(cuid())
+  branchId    String
+  tableId     String?
+  sessionId   String?
+  status      OrderStatus   @default(pending)
+  totalAmount Decimal       @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  branch      Branch        @relation(fields: [branchId], references: [id])
+  session     tableSession? @relation(fields: [sessionId], references: [id])
+  table       Table?        @relation(fields: [tableId], references: [id])
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  menuItemId String
+  quantity   Int
+  price      Decimal
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  order      Order    @relation(fields: [orderId], references: [id])
+}
+
+model PaymentMethod {
+  id        String    @id @default(cuid())
+  name      String
+  branchId  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  payment   Payment[]
+  branch    Branch    @relation(fields: [branchId], references: [id])
+}
+
+model Payment {
+  id            String         @id @default(cuid())
+  tableId       String
+  sessionId     String
+  amount        Decimal
+  status        PaymentStatus  @default(pending)
+  methodId      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  paymentmethod PaymentMethod? @relation(fields: [methodId], references: [id])
+  session       tableSession   @relation(fields: [sessionId], references: [id])
+  table         Table          @relation(fields: [tableId], references: [id])
+}
 
 enum OrderStatus {
-  pending 
+  pending
   confirm
   preparing
   served
@@ -21,7 +198,7 @@ enum OrderStatus {
 
 enum UserRole {
   owner
-  manager 
+  manager
   front_staff
   cashier
   kitchen
@@ -29,8 +206,8 @@ enum UserRole {
 
 enum TableStatus {
   available
-  occupied 
-  reserved 
+  occupied
+  reserved
 }
 
 enum PaymentStatus {
@@ -39,221 +216,3 @@ enum PaymentStatus {
   failed
   refunded
 }
-
-model Company {
-  id        String   @id @default(cuid())
-  name      String
-  subscription String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  restaurants Restaurant[]
-}
-
-model Restaurant {
-  id         String   @id @default(cuid())
-  name       String
-  companyId  String
-  company    Company @relation(fields: [companyId], references: [id])
-  branches   Branch[]
-  user       User[]
-
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-}
-
-model Branch {
-  id           String   @id @default(cuid())
-  name         String
-  location     String?
-
-  restaurantId String
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
-
-  zone      Zone[]
-  user      User[]
-  tables   Table[]
-  menus    Menu[]
-  orders   Order[]
-  paymentMethods PaymentMethod[]
-
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-}
-
-model User {
-  id            String      @id @default(cuid())
-  name          String
-  username      String      @unique
-  email         String      @unique
-  hashedPassword String
-  hashedPin      String
-  role          UserRole
-  
-  branchId       String?
-  branch         Branch?  @relation(fields: [branchId], references: [id])
-
-  restaurantId  String?
-  restaurant    Restaurant? @relation(fields: [restaurantId], references: [id])
-
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-}
-
-model Zone {
-   id            String      @id @default(cuid())
-  name          String
-
-  branchId       String?
-  branch         Branch?  @relation(fields: [branchId], references: [id])
-
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  tables        Table[]
-}
-
-model Table {
-  id            String        @id @default(cuid())
-  tableNumber   String
-  capacity      Int
-  status        TableStatus   @default(available)
-  session       Boolean
-  qr            String @unique
-
-  branchId       String?
-  branch         Branch?  @relation(fields: [branchId], references: [id])
-
-  zoneId         String
-  zone          Zone @relation(fields: [zoneId], references: [id])
-
-  order       Order[]
-  payment     Payment[]
-  tableSession tableSession[]
-
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  @@unique([branchId, tableNumber])
-}
-
-model tableSession {
-  id            String  @id @default(cuid())
-
-  tableId       String
-  table      Table @relation (fields: [tableId] , references: [id])
-
-  sessionStatus     Boolean
-  startAt           DateTime @default(now())
-  endAt             DateTime?
-
-  orders Order[]
-  payments Payment[]
-
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-}
-
-model Menu {
-  id        String   @id @default(cuid())
-  name      String
-
-  branchId  String
-  branch Branch @relation(fields: [branchId], references: [id])
-
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  categories Category[]
-}
-
-model Category {
-  id     String @id @default(cuid())
-  name   String
-
-  menuId String
-  menu Menu @relation(fields: [menuId], references: [id])
-
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  items MenuItem[]
-}
-
-model MenuItem {
-  id          String  @id @default(cuid())
-  name        String
-  price       Decimal
-  description String?
-  imageUrl    String?
-
-  categoryId String
-  category Category @relation(fields: [categoryId], references: [id])
-
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  orderItems OrderItem[]
-}
-
-model Order {
-  id         String      @id @default(cuid())
-  branchId   String
-  tableId    String?
-  sessionId  String?
-
-  status OrderStatus @default(pending)
-
-  totalAmount Decimal @default(0)
-
-  branch   Branch   @relation(fields: [branchId], references: [id])
-  table    Table?   @relation(fields: [tableId], references: [id])
-  session  tableSession? @relation( fields: [sessionId] , references: [id])
-
-  items   OrderItem[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-}
-
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  menuItemId String
-  quantity  Int
-  price     Decimal
-
-  order    Order    @relation(fields: [orderId], references: [id])
-  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
-
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-}
-
-model PaymentMethod {
-  id        String @id @default(cuid())
-  name      String
-
-  branchId   String
-  branch    Branch @relation( fields: [branchId], references: [id])
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  payment    Payment[]
-}
-
-model Payment {
-  id        String @id @default(cuid())
-  tableId   String 
-  sessionId String
-
-  amount    Decimal
-  status    PaymentStatus @default(pending)
-  methodId    String? // cash, card, qr
-  paymentmethod  PaymentMethod? @relation( fields: [methodId], references: [id])
-
-  table Table @relation(fields: [tableId], references: [id])
-  session tableSession @relation( fields: [sessionId], references: [id])
-
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-}
-
-
-
-
-
-
