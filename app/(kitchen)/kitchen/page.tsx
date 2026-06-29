@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChefHat } from "lucide-react";
 import RouteGuard from "@/components/shared/RouteGuard";
+import UserMenu from "@/components/shared/UserMenu";
 import StationTabs from "@/components/kitchen/StationTabs";
 import ViewToggle from "@/components/kitchen/ViewToggle";
 import KanbanColumn from "@/components/kitchen/KanbanColumn";
@@ -27,7 +28,9 @@ function KitchenDisplay() {
       .filter((t) => t.items.length > 0);
   }, [tickets, station]);
 
-  const activeCount = filteredTickets.filter((t) => t.status !== "served").length;
+  const activeCount = filteredTickets.filter(
+    (t) => t.status !== "served",
+  ).length;
 
   const handleAdvance = (ticketId: string, next: string) => {
     advanceStatus(ticketId, next as TicketStatus);
@@ -42,12 +45,16 @@ function KitchenDisplay() {
               <ChefHat className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
-              <h1 className="text-[16px] font-medium text-text-primary">Kitchen Display</h1>
+              <h1 className="text-[16px] font-medium text-text-primary">
+                Kitchen Display
+              </h1>
               <p className="text-[12px] text-text-muted mt-0.5">
-                {station} · {activeCount} active ticket{activeCount !== 1 ? "s" : ""}
+                {station} · {activeCount} active ticket
+                {activeCount !== 1 ? "s" : ""}
               </p>
             </div>
           </div>
+          <UserMenu />
         </div>
 
         <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
