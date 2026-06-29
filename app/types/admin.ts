@@ -2,16 +2,23 @@
 
 export type AdminViewRole = "owner" | "manager";
 
-export type StaffRole = "owner" | "manager" | "front_staff" | "kitchen" | "cashier";
-
-export type StaffStatus = "active" | "off_shift";
+export type StaffRole =
+  | "owner"
+  | "manager"
+  | "front_staff"
+  | "kitchen"
+  | "cashier";
 
 export type StaffMember = {
   id: string;
   name: string;
+  email: string;
+  username: string;
   role: StaffRole;
-  assignedTo: string;
-  status: StaffStatus;
+  restaurantId: string;
+  branchId: string;
+  zoneId: string;
+  status: boolean;
 };
 
 export type MenuCategory = {

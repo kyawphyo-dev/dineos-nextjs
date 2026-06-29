@@ -8,56 +8,62 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+
 model Company {
   id           String       @id @default(cuid())
   name         String
-  subscription String
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
-  restaurants  Restaurant[]
+  owner        Owner[]
+  restaurant   Restaurant[]
+}
+
+  model Owner {
+  id             String      @id @default(cuid())
+  name           String
+  email          String      @unique
+  role           String
+  username       String      @unique
+  hashedPassword String
+  hashedPin      String
+  companyId      String
+  subscription   subscriptionPlan 
+  company        Company @relation(fields:[companyId], references:[id])
+  restaurant     Restaurant[]
+  branch         Branch[]
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model Restaurant {
   id        String   @id @default(cuid())
   name      String
   companyId String
+  company Company @relation(fields: [companyId], references: [id])
+  ownerId   String
+  owner     Owner @relation(fields: [ownerId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   branches  Branch[]
-  company   Company  @relation(fields: [companyId], references: [id])
-  user      User[]
+  staff      Staff[]
 }
 
 model Branch {
   id             String          @id @default(cuid())
   name           String
   location       String?
+  ownerId        String
   restaurantId   String
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   restaurant     Restaurant      @relation(fields: [restaurantId], references: [id])
+  owner          Owner           @relation(fields: [ownerId], references: [id])
   menus          Menu[]
   orders         Order[]
   paymentMethods PaymentMethod[]
   tables         Table[]
-  user           User[]
+  staff           Staff[]
   zone           Zone[]
-}
-
-model User {
-  id             String      @id @default(cuid())
-  name           String
-  email          String      @unique
-  role           UserRole
-  branchId       String?
-  restaurantId   String?
-  username       String      @unique
-  hashedPassword String
-  hashedPin      String
-  branch         Branch?     @relation(fields: [branchId], references: [id])
-  restaurant     Restaurant? @relation(fields: [restaurantId], references: [id])
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
 }
 
 model Zone {
@@ -68,6 +74,26 @@ model Zone {
   updatedAt DateTime @updatedAt
   tables    Table[]
   branch    Branch?  @relation(fields: [branchId], references: [id])
+  staff     Staff[]
+}
+
+model Staff {
+  id             String      @id @default(cuid())
+  name           String
+  email          String      @unique
+  role           StaffRole
+  restaurantId   String
+  branchId       String
+  zoneId         String
+  username       String      @unique
+  hashedPassword String
+  hashedPin      String
+  status         Boolean    @default(true)
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
+  branch         Branch     @relation(fields: [branchId], references: [id])
+  zone           Zone       @relation(fields: [zoneId], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model Table {
@@ -117,6 +143,7 @@ model Category {
   id        String     @id @default(cuid())
   name      String
   menuId    String
+  description String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   menu      Menu       @relation(fields: [menuId], references: [id])
@@ -196,7 +223,7 @@ enum OrderStatus {
   cancelled
 }
 
-enum UserRole {
+enum StaffRole {
   owner
   manager
   front_staff
@@ -216,3 +243,11 @@ enum PaymentStatus {
   failed
   refunded
 }
+
+enum subscriptionPlan {
+  free
+  basic
+  bronze
+  silver
+  gold
+  }
