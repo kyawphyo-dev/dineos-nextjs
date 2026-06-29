@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Wallet, Users, History } from "lucide-react";
 import RouteGuard from "@/components/shared/RouteGuard";
+import UserMenu from "@/components/shared/UserMenu";
 import SessionRow from "@/components/cashier/SessionRow";
 import BillSummary from "@/components/cashier/BillSummary";
 import DiscountControls from "@/components/cashier/DiscountControls";
@@ -11,18 +12,30 @@ import SplitBillPanel from "@/components/cashier/SplitBillPanel";
 import PaymentPanel from "@/components/cashier/PaymentPanel";
 import ReceiptConfirmation from "@/components/cashier/ReceiptConfirmation";
 import { useSessions, calculateBill } from "@/context/SessionsContext";
-import type { Discount, PaymentMethod, ReceiptRecord } from "@/app/types/cashier";
+import type {
+  Discount,
+  PaymentMethod,
+  ReceiptRecord,
+} from "@/app/types/cashier";
 
 function CashierDashboard() {
   const router = useRouter();
-  const { sessions, getSession, recordPayment, closeSession, markFinishedEating } = useSessions();
+  const {
+    sessions,
+    getSession,
+    recordPayment,
+    closeSession,
+    markFinishedEating,
+  } = useSessions();
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [discount, setDiscount] = useState<Discount | null>(null);
   const [showSplit, setShowSplit] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [paidReceipt, setPaidReceipt] = useState<ReceiptRecord | null>(null);
 
-  const selectedSession = selectedTableId ? getSession(selectedTableId) : undefined;
+  const selectedSession = selectedTableId
+    ? getSession(selectedTableId)
+    : undefined;
 
   const handleSelect = (tableId: string) => {
     setSelectedTableId(tableId);
@@ -45,7 +58,9 @@ function CashierDashboard() {
     setPaidReceipt(null);
   };
 
-  const billTotal = selectedSession ? calculateBill(selectedSession, discount).total : 0;
+  const billTotal = selectedSession
+    ? calculateBill(selectedSession, discount).total
+    : 0;
 
   return (
     <div className="min-h-screen bg-cream-dark">
@@ -56,17 +71,24 @@ function CashierDashboard() {
               <Wallet className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
-              <h1 className="text-[18px] font-medium text-text-primary">Cashier</h1>
-              <p className="text-[12px] text-text-muted mt-0.5">Baan Rim Naam · {sessions.length} active sessions</p>
+              <h1 className="text-[18px] font-medium text-text-primary">
+                Cashier
+              </h1>
+              <p className="text-[12px] text-text-muted mt-0.5">
+                Baan Rim Naam · {sessions.length} active sessions
+              </p>
             </div>
           </div>
-          <button
-            onClick={() => router.push("/cashier/history")}
-            className="flex items-center gap-1.5 text-[12px] font-medium text-text-muted bg-white border border-black/8 rounded-xl px-3.5 py-2"
-          >
-            <History className="w-3.5 h-3.5" />
-            Bill history
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push("/cashier/history")}
+              className="flex items-center gap-1.5 text-[12px] font-medium text-text-muted bg-white border border-black/8 rounded-xl px-3.5 py-2"
+            >
+              <History className="w-3.5 h-3.5" />
+              Bill history
+            </button>
+            <UserMenu />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 mt-6">
@@ -96,11 +118,17 @@ function CashierDashboard() {
           {selectedSession && (
             <div className="flex flex-col gap-4">
               {paidReceipt ? (
-                <ReceiptConfirmation receipt={paidReceipt} onClose={handleCloseSession} />
+                <ReceiptConfirmation
+                  receipt={paidReceipt}
+                  onClose={handleCloseSession}
+                />
               ) : (
                 <>
                   <BillSummary session={selectedSession} discount={discount} />
-                  <DiscountControls discount={discount} onChange={setDiscount} />
+                  <DiscountControls
+                    discount={discount}
+                    onChange={setDiscount}
+                  />
 
                   {!showSplit ? (
                     <button
