@@ -5,7 +5,7 @@ import { errorAction } from "../response";
 import { authOptions } from "../auth-options";
 import { getServerSession } from "next-auth/next";
 import type { Prisma } from "@prisma/client";
-import { StaffMember, Zone } from "@/app/types/admin";
+import { Zone } from "@/app/types/admin";
 
 interface GetAllUsersParams {
   page?: number;

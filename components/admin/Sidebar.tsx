@@ -14,26 +14,50 @@ import {
   Wallet,
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
+import ROUTES from "@/route";
 
 const NAV_SECTIONS = [
   {
     label: "Catalog",
     items: [
-      { href: "/admin/categories", label: "Categories", icon: Tag },
-      { href: "/admin/menu", label: "Menu items", icon: Soup },
-      { href: "/admin/packages", label: "Packages", icon: PackageIcon },
-      { href: "/admin/tables", label: "Tables", icon: UtensilsCrossed },
+      { href: ROUTES.ADMIN_CATEGORY("1", "2"), label: "Categories", icon: Tag },
+      { href: ROUTES.ADMIN_MENU("1", "2"), label: "Menu items", icon: Soup },
+      {
+        href: ROUTES.ADMIN_PACKAGES("1", "2"),
+        label: "Packages",
+        icon: PackageIcon,
+      },
+      {
+        href: ROUTES.ADMIN_TABLES("1", "2"),
+        label: "Tables",
+        icon: UtensilsCrossed,
+      },
     ],
   },
   {
     label: "Team",
-    items: [{ href: "/admin/staff", label: "Staff accounts", icon: Users }],
+    items: [
+      {
+        href: ROUTES.ADMIN_STAFF("1", "2"),
+        label: "Staff accounts",
+        icon: Users,
+      },
+    ],
   },
   {
     label: "Insights",
     items: [
-      { href: "/admin/reports/staff", label: "Staff performance", icon: BarChart3 },
-      { href: "/admin/reports/sales", label: "Sales reports", icon: Wallet, ownerOnly: true },
+      {
+        href: ROUTES.ADMIN_STAFF_REPORT("1", "2"),
+        label: "Staff performance",
+        icon: BarChart3,
+      },
+      {
+        href: ROUTES.ADMIN_SALES_REPORT("1", "2"),
+        label: "Sales reports",
+        icon: Wallet,
+        ownerOnly: true,
+      },
     ],
   },
 ];
@@ -43,14 +67,21 @@ export default function Sidebar() {
   const { role, canViewSalesReports } = useRole();
 
   return (
-    <div className="w-[220px] bg-cream-dark border-r border-black/8 flex-shrink-0 px-3 py-4 hidden md:flex md:flex-col">
-      <Link href="/admin" className="flex items-center gap-2 px-2 pb-1">
-        <div className="w-7 h-7 rounded-lg bg-bark flex items-center justify-center flex-shrink-0">
+    <div className="w-55 bg-cream-dark border-r border-black/8 shrink-0 px-3 py-4 hidden md:flex md:flex-col">
+      <Link
+        href={ROUTES.ADMIN_DASHBOARD("1", "2")}
+        className="flex items-center gap-2 px-2 pb-1"
+      >
+        <div className="w-7 h-7 rounded-lg bg-bark flex items-center justify-center shrink-0">
           <ChefHat className="w-3.5 h-3.5 text-white" />
         </div>
-        <span className="text-[13px] font-semibold text-text-primary">DineOS Admin</span>
+        <span className="text-[13px] font-semibold text-text-primary">
+          DineOS Admin
+        </span>
       </Link>
-      <p className="text-[10px] text-text-hint px-2 pb-3 capitalize">Signed in as {role}</p>
+      <p className="text-[10px] text-text-hint px-2 pb-3 capitalize">
+        Signed in as {role}
+      </p>
 
       <nav className="flex-1 overflow-y-auto">
         {NAV_SECTIONS.map((section) => (

@@ -198,7 +198,7 @@ export default function StaffDashboard({
             <option value="kitchen">Kitchen</option>
             <option value="cashier">Cashier</option>
             <option value="manager">Manager</option>
-            <option value="owner">Owner</option>
+            {/* <option value="owner">Owner</option> */}
           </select>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
@@ -314,7 +314,7 @@ export default function StaffDashboard({
                   <option value="kitchen">Kitchen</option>
                   <option value="cashier">Cashier</option>
                   <option value="manager">Manager</option>
-                  <option value="owner">Owner</option>
+                  {/* <option value="owner">Owner</option> */}
                 </select>
               )}
 
