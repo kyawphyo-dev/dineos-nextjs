@@ -77,13 +77,13 @@ model Table {
   status       TableStatus    @default(available)
   session      Boolean
   qr           String         @unique
-  branchId     String?
+  branchId     String
   zoneId       String
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   order        Order[]
   payment      Payment[]
-  branch       Branch?        @relation(fields: [branchId], references: [id])
+  branch       Branch        @relation(fields: [branchId], references: [id])
   zone         Zone           @relation(fields: [zoneId], references: [id])
   tableSession tableSession[]
 
