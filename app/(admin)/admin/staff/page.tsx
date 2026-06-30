@@ -1,7 +1,11 @@
 import StaffDashboard from "@/components/admin/StaffDashboard";
 import RouteGuard from "@/components/shared/RouteGuard";
 import { GetAllUsers } from "@/lib/actions/GetAllUsers.action";
+<<<<<<< HEAD
 import type { StaffMember, Zone } from "@/app/types/admin";
+=======
+import type { StaffMember } from "@/app/types/admin";
+>>>>>>> main
 import { authOptions } from "@/lib/auth-options";
 import { getServerSession } from "next-auth";
 
@@ -23,6 +27,7 @@ export default async function StaffPage() {
     return <div>Error loading staff</div>;
   }
 
+<<<<<<< HEAD
   const {
     totalUsers = 0,
     users = [],
@@ -30,6 +35,9 @@ export default async function StaffPage() {
     restaurantList = [],
     branchList = [],
   } = result.data || {};
+=======
+  const { totalUsers = 0, users = [] } = result.data || {};
+>>>>>>> main
 
   const mappedStaff: StaffMember[] = users.map((user: any) => ({
     id: user.id,
@@ -48,9 +56,12 @@ export default async function StaffPage() {
       <StaffDashboard
         staff={mappedStaff}
         totalStaff={totalUsers}
+<<<<<<< HEAD
         zoneList={zoneList}
         restaurantList={restaurantList}
         branchList={branchList}
+=======
+>>>>>>> main
         currentUser={session.user}
       />
     </RouteGuard>
