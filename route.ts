@@ -1,6 +1,6 @@
 const ROUTES = {
   ADMIN_DASHBOARD: (restaurantId: string, branchId: string) =>
-    `http://localhost:3000/admin/${restaurantId}/${branchId}/dashboard`,
+    `http://localhost:3000/admin/${restaurantId}/${branchId}`,
   ADMIN_CATEGORY: (restaurantId: string, branchId: string) =>
     `http://localhost:3000/admin/${restaurantId}/${branchId}/categories`,
   ADMIN_MENU: (restaurantId: string, branchId: string) =>

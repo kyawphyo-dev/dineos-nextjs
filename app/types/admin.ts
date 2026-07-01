@@ -9,13 +9,6 @@ export type StaffRole =
   | "kitchen"
   | "cashier";
 
-export type StaffStatus = "active" | "off_shift";
-
-export type Restaurant = {
-  id: string;
-  name: string;
-};
-
 export type StaffMember = {
   id: string;
   name: string;
@@ -26,8 +19,8 @@ export type StaffMember = {
   branchId: string;
   zoneId: string;
   status: boolean;
-  hashedPassword: string;
-  hashedPin: string;
+  hashedPassword?: string;
+  hashedPin?: string;
 };
 
 export type Zone = {
@@ -79,4 +72,15 @@ export type StaffPerformanceRow = {
   role: StaffRole;
   ordersHandled: number;
   tablesServed: number;
+};
+
+export type authenticatedUser = {
+  id: string;
+  name?: string;
+  email?: string;
+  username?: string;
+  role?: StaffRole;
+  companyId?: string;
+  restaurantId?: string;
+  branchId?: string;
 };

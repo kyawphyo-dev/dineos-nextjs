@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import {
   ChefHat,
   Tag,
@@ -14,62 +14,77 @@ import {
   Wallet,
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
-import ROUTES from "@/route";
-
-const NAV_SECTIONS = [
-  {
-    label: "Catalog",
-    items: [
-      { href: ROUTES.ADMIN_CATEGORY("1", "2"), label: "Categories", icon: Tag },
-      { href: ROUTES.ADMIN_MENU("1", "2"), label: "Menu items", icon: Soup },
-      {
-        href: ROUTES.ADMIN_PACKAGES("1", "2"),
-        label: "Packages",
-        icon: PackageIcon,
-      },
-      {
-        href: ROUTES.ADMIN_TABLES("1", "2"),
-        label: "Tables",
-        icon: UtensilsCrossed,
-      },
-    ],
-  },
-  {
-    label: "Team",
-    items: [
-      {
-        href: ROUTES.ADMIN_STAFF("1", "2"),
-        label: "Staff accounts",
-        icon: Users,
-      },
-    ],
-  },
-  {
-    label: "Insights",
-    items: [
-      {
-        href: ROUTES.ADMIN_STAFF_REPORT("1", "2"),
-        label: "Staff performance",
-        icon: BarChart3,
-      },
-      {
-        href: ROUTES.ADMIN_SALES_REPORT("1", "2"),
-        label: "Sales reports",
-        icon: Wallet,
-        ownerOnly: true,
-      },
-    ],
-  },
-];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { role, canViewSalesReports } = useRole();
+  const { restaurantId, branchId } = useParams();
+
+  const NAV_SECTIONS = [
+    {
+      label: "Catalog",
+      items: [
+        {
+          href: `/admin/${restaurantId}/${branchId}/categories`,
+          label: "Categories",
+          icon: Tag,
+          segment: "/categories",
+        },
+        {
+          href: `/admin/${restaurantId}/${branchId}/menu`,
+          label: "Menu items",
+          icon: Soup,
+          segment: "/menu",
+        },
+        {
+          href: `/admin/${restaurantId}/${branchId}/packages`,
+          label: "Packages",
+          icon: PackageIcon,
+          segment: "/packages",
+        },
+        {
+          href: `/admin/${restaurantId}/${branchId}/tables`,
+          label: "Tables",
+          icon: UtensilsCrossed,
+          segment: "/tables",
+        },
+      ],
+    },
+    {
+      label: "Team",
+      items: [
+        {
+          href: `/admin/${restaurantId}/${branchId}/staff`,
+          label: "Staff accounts",
+          icon: Users,
+          segment: "/staff",
+        },
+      ],
+    },
+    {
+      label: "Insights",
+      items: [
+        {
+          href: `/admin/${restaurantId}/${branchId}/reports/staff`,
+          label: "Staff performance",
+          icon: BarChart3,
+          segment: "/reports/staff",
+        },
+        {
+          href: `/admin/${restaurantId}/${branchId}/reports/sales`,
+          label: "Sales reports",
+          icon: Wallet,
+          ownerOnly: true,
+          segment: "/reports/sales",
+        },
+      ],
+    },
+  ];
 
   return (
-    <div className="w-55 bg-cream-dark border-r border-black/8 shrink-0 px-3 py-4 hidden md:flex md:flex-col">
+    <div className="w-56 bg-cream-dark border-r border-black/8 shrink-0 px-3 py-4 hidden md:flex md:flex-col">
       <Link
-        href={ROUTES.ADMIN_DASHBOARD("1", "2")}
+        href={`/admin/${restaurantId}/${branchId}`}
         className="flex items-center gap-2 px-2 pb-1"
       >
         <div className="w-7 h-7 rounded-lg bg-bark flex items-center justify-center shrink-0">
@@ -91,7 +106,7 @@ export default function Sidebar() {
             </p>
             {section.items.map((item) => {
               const locked = item.ownerOnly && !canViewSalesReports;
-              const active = pathname === item.href;
+              const active = pathname.includes(item.segment);
               const Icon = item.icon;
 
               if (locked) {

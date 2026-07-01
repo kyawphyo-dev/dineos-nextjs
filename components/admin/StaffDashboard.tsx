@@ -50,9 +50,10 @@ export default function StaffDashboard({
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [selectedZoneId, setSelectedZoneId] = useState("");
   const [filteredZones, setFilteredZones] = useState<Zone[]>([]);
+  const [filteredBranches, setFilteredBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Pre-select restaurant/branch if currentUser has them
+  // Pre-select restaurant/branch/zone if currentUser has them
   useEffect(() => {
     if (currentUser.restaurantId) {
       setSelectedRestaurantId(currentUser.restaurantId);
@@ -62,10 +63,28 @@ export default function StaffDashboard({
 
     if (currentUser.branchId) {
       setSelectedBranchId(currentUser.branchId);
-    } else if (branchList.length > 0) {
-      setSelectedBranchId(branchList[0].id);
+    } else if (filteredBranches.length > 0) {
+      setSelectedBranchId(filteredBranches[0].id);
     }
-  }, [currentUser, restaurantList, branchList]);
+  }, [currentUser, restaurantList, filteredBranches]);
+
+  // Filter branches based on selected restaurant
+  useEffect(() => {
+    if (selectedRestaurantId) {
+      const branches = branchList.filter(
+        (b) => b.restaurantId === selectedRestaurantId,
+      );
+      setFilteredBranches(branches);
+      if (
+        branches.length > 0 &&
+        !filteredBranches.find((b) => b.id === selectedBranchId)
+      ) {
+        setSelectedBranchId(branches[0].id);
+      }
+    } else {
+      setFilteredBranches([]);
+    }
+  }, [selectedRestaurantId, branchList]);
 
   // Filter zones based on selected branch
   useEffect(() => {
@@ -79,7 +98,7 @@ export default function StaffDashboard({
         setSelectedZoneId(zones[0].id);
       }
     } else {
-      setFilteredZones(zoneList);
+      setFilteredZones([]);
     }
   }, [selectedBranchId, zoneList]);
 
@@ -139,7 +158,7 @@ export default function StaffDashboard({
   return (
     <form onSubmit={handleAdd}>
       <PageHeader
-        title="Staff Accounts"
+        title="Staff accounts"
         subtitle={`${totalStaff} staff members`}
       />
 
@@ -194,11 +213,11 @@ export default function StaffDashboard({
             onChange={(e) => setNewRole(e.target.value as StaffRole)}
             className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[13px] outline-none focus:border-clay"
           >
-            <option value="front_staff">Front Staff</option>
+            <option value="front_staff">Front staff</option>
             <option value="kitchen">Kitchen</option>
             <option value="cashier">Cashier</option>
             <option value="manager">Manager</option>
-            {/* <option value="owner">Owner</option> */}
+            <option value="owner">Owner</option>
           </select>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
@@ -207,15 +226,11 @@ export default function StaffDashboard({
               value={selectedRestaurantId}
               onChange={(e) => {
                 setSelectedRestaurantId(e.target.value);
-                const branches = branchList.filter(
-                  (b) => b.restaurantId === e.target.value,
-                );
-                if (branches.length > 0) setSelectedBranchId(branches[0].id);
               }}
               className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[13px] outline-none focus:border-clay"
               required
             >
-              <option value="">Select Restaurant</option>
+              <option value="">Select restaurant</option>
               {restaurantList.map((r) => (
                 <option key={r.id} value={r.id}>
                   {r.name}
@@ -223,25 +238,19 @@ export default function StaffDashboard({
               ))}
             </select>
           )}
-          {branchList.length > 0 && !currentUser.branchId && (
+          {filteredBranches.length > 0 && !currentUser.branchId && (
             <select
               value={selectedBranchId}
               onChange={(e) => setSelectedBranchId(e.target.value)}
               className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[13px] outline-none focus:border-clay"
               required
             >
-              <option value="">Select Branch</option>
-              {branchList
-                .filter(
-                  (b) =>
-                    !selectedRestaurantId ||
-                    b.restaurantId === selectedRestaurantId,
-                )
-                .map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
+              <option value="">Select branch</option>
+              {filteredBranches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
             </select>
           )}
           <select
@@ -250,7 +259,7 @@ export default function StaffDashboard({
             className="flex-1 min-w-[200px] rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
             required
           >
-            <option value="">Select Zone</option>
+            <option value="">Select zone</option>
             {filteredZones.map((z) => (
               <option key={z.id} value={z.id}>
                 {z.name}
@@ -260,7 +269,7 @@ export default function StaffDashboard({
           <button
             type="submit"
             disabled={loading}
-            className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5 flex-shrink-0 disabled:opacity-50"
+            className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5 shrink-0 disabled:opacity-50"
           >
             <Plus className="w-3.5 h-3.5" />
             {loading ? "Adding..." : "Add staff"}
@@ -310,11 +319,11 @@ export default function StaffDashboard({
                   }
                   className={`text-[11px] font-medium px-2 py-1 rounded-full border-none outline-none cursor-pointer ${ROLE_BADGE[member.role]}`}
                 >
-                  <option value="front_staff">Front Staff</option>
+                  <option value="front_staff">Front staff</option>
                   <option value="kitchen">Kitchen</option>
                   <option value="cashier">Cashier</option>
                   <option value="manager">Manager</option>
-                  {/* <option value="owner">Owner</option> */}
+                  <option value="owner">Owner</option>
                 </select>
               )}
 
