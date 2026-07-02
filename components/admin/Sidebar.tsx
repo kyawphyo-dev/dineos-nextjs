@@ -12,6 +12,8 @@ import {
   BarChart3,
   Lock,
   Wallet,
+  Split,
+  LayoutDashboard,
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
 
@@ -21,6 +23,24 @@ export default function Sidebar() {
   const { restaurantId, branchId } = useParams();
 
   const NAV_SECTIONS = [
+    {
+      label: "Dashboard",
+      items: [
+        {
+          href: `/admin/${restaurantId}`,
+          label: "Branches",
+          icon: Split,
+          ownerOnly: true,
+          segment: "/",
+        },
+        {
+          href: `/admin/${restaurantId}/${branchId}`,
+          label: "Admin Dashboard",
+          icon: LayoutDashboard,
+          exact: true, // Flag for exact matching
+        },
+      ],
+    },
     {
       label: "Catalog",
       items: [
@@ -106,7 +126,12 @@ export default function Sidebar() {
             </p>
             {section.items.map((item) => {
               const locked = item.ownerOnly && !canViewSalesReports;
-              const active = pathname.includes(item.segment);
+              let active = false;
+              if ("exact" in item && item.exact) {
+                active = pathname === `/admin/${restaurantId}/${branchId}`;
+              } else if (item.segment) {
+                active = pathname.includes(item.segment);
+              }
               const Icon = item.icon;
 
               if (locked) {

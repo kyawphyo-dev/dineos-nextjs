@@ -31,7 +31,6 @@ export default async function CreateStaff(params: CreateStaffParams) {
       };
     }
 
-    // Get authenticated user
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return {
