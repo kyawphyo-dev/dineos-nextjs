@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   Tag,
   Soup,
@@ -13,51 +14,70 @@ import {
 } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
 import { useRole } from "@/context/RoleContext";
-import { useCatalog } from "@/context/CatalogContext";
 
-export default function AdminDashboard() {
+import type { Branch } from "@prisma/client";
+
+type DashboardCounts = {
+  menus: number;
+  staff: number;
+  orders: number;
+  tables: number;
+  packages: number;
+};
+
+type DashboardData = {
+  branch: Branch;
+  counts: DashboardCounts;
+  restaurantName: string | null;
+};
+
+type AdminDashboardProps = {
+  data: DashboardData;
+};
+
+export default function AdminDashboard({ data }: AdminDashboardProps) {
   const { canViewSalesReports } = useRole();
-  const { categories, menuItems, packages, tables } = useCatalog();
+  const { restaurantId, branchId } = useParams();
 
   const cards = [
     {
-      href: "/admin/categories",
-      label: "Categories",
-      icon: Tag,
-      value: categories.length,
-    },
-    {
-      href: "/admin/menu",
-      label: "Menu items",
+      href: `/admin/${restaurantId}/${branchId}/menu`,
+      label: "Menus",
       icon: Soup,
-      value: menuItems.length,
+      value: data.counts.menus,
     },
     {
-      href: "/admin/packages",
-      label: "Packages",
-      icon: PackageIcon,
-      value: packages.length,
-    },
-    {
-      href: "/admin/tables",
-      label: "Tables",
-      icon: UtensilsCrossed,
-      value: tables.length,
-    },
-    {
-      href: "/admin/staff",
+      href: `/admin/${restaurantId}/${branchId}/staff`,
       label: "Staff accounts",
       icon: Users,
-      value: 3,
+      value: data.counts.staff,
     },
     {
-      href: "/admin/reports/staff",
+      href: "#",
+      label: "Orders",
+      icon: UtensilsCrossed,
+      value: data.counts.orders,
+    },
+    {
+      href: `/admin/${restaurantId}/${branchId}/tables`,
+      label: "Tables",
+      icon: UtensilsCrossed,
+      value: data.counts.tables,
+    },
+    {
+      href: `/admin/${restaurantId}/${branchId}/packages`,
+      label: "Packages",
+      icon: PackageIcon,
+      value: data.counts.packages,
+    },
+    {
+      href: `/admin/${restaurantId}/${branchId}/reports/staff`,
       label: "Staff performance",
       icon: BarChart3,
       value: "View",
     },
     {
-      href: "/admin/reports/sales",
+      href: `/admin/${restaurantId}/${branchId}/reports/sales`,
       label: "Sales reports",
       icon: Wallet,
       value: canViewSalesReports ? "View" : "Locked",
@@ -67,7 +87,10 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle="Baan Rim Naam · Thai Kitchen" />
+      <PageHeader
+        title="Dashboard"
+        subtitle={`${data.restaurantName} - ${data.branch.name}`}
+      />
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {cards.map((card) => {

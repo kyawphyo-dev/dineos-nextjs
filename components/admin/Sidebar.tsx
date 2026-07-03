@@ -31,7 +31,7 @@ export default function Sidebar() {
           label: "Branches",
           icon: Split,
           ownerOnly: true,
-          segment: "/",
+          segment: "",
         },
         {
           href: `/admin/${restaurantId}/${branchId}`,
