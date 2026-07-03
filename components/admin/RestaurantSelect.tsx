@@ -8,18 +8,6 @@ import { useState } from "react";
 import { FormState } from "@/components/admin/AddRestaurantModel";
 import AddRestaurantModal from "@/components/admin/AddRestaurantModel";
 import CreateRestaurant from "@/lib/actions/CreateRestaurant.action";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button } from "../ui/button";
 
 type RestaurantSelectProps = {
   userName: string;

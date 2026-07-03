@@ -8,44 +8,43 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-
 model Company {
-  id           String       @id @default(cuid())
-  name         String
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  owner        Owner[]
-  restaurant   Restaurant[]
+  id         String       @id @default(cuid())
+  name       String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  owner      Owner[]
+  restaurant Restaurant[]
 }
 
-  model Owner {
-  id             String      @id @default(cuid())
+model Owner {
+  id             String           @id @default(cuid())
   name           String
-  email          String      @unique
+  email          String           @unique
   role           String
-  username       String      @unique
+  username       String           @unique
   hashedPassword String
   hashedPin      String
   companyId      String
-  subscription   subscriptionPlan 
-  company        Company @relation(fields:[companyId], references:[id])
-  restaurant     Restaurant[]
+  subscription   subscriptionPlan
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   branch         Branch[]
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  company        Company          @relation(fields: [companyId], references: [id])
+  restaurant     Restaurant[]
 }
 
 model Restaurant {
   id        String   @id @default(cuid())
   name      String
   companyId String
-  company Company @relation(fields: [companyId], references: [id])
   ownerId   String
-  owner     Owner @relation(fields: [ownerId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   branches  Branch[]
-  staff      Staff[]
+  company   Company  @relation(fields: [companyId], references: [id])
+  owner     Owner    @relation(fields: [ownerId], references: [id])
+  staff     Staff[]
 }
 
 model Branch {
@@ -56,14 +55,26 @@ model Branch {
   restaurantId   String
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  restaurant     Restaurant      @relation(fields: [restaurantId], references: [id])
   owner          Owner           @relation(fields: [ownerId], references: [id])
+  restaurant     Restaurant      @relation(fields: [restaurantId], references: [id])
   menus          Menu[]
   orders         Order[]
+  packages       Package[]
   paymentMethods PaymentMethod[]
+  staff          Staff[]
   tables         Table[]
-  staff           Staff[]
   zone           Zone[]
+}
+
+model Package {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Int
+  branchId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  branch      Branch?  @relation(fields: [branchId], references: [id])
 }
 
 model Zone {
@@ -72,28 +83,28 @@ model Zone {
   branchId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  staff     Staff[]
   tables    Table[]
   branch    Branch?  @relation(fields: [branchId], references: [id])
-  staff     Staff[]
 }
 
 model Staff {
-  id             String      @id @default(cuid())
+  id             String     @id @default(cuid())
   name           String
-  email          String      @unique
+  email          String     @unique
   role           StaffRole
   restaurantId   String
   branchId       String
   zoneId         String
-  username       String      @unique
+  username       String     @unique
   hashedPassword String
   hashedPin      String
   status         Boolean    @default(true)
-  restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
   branch         Branch     @relation(fields: [branchId], references: [id])
+  restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
   zone           Zone       @relation(fields: [zoneId], references: [id])
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
 }
 
 model Table {
@@ -109,7 +120,7 @@ model Table {
   updatedAt    DateTime       @updatedAt
   order        Order[]
   payment      Payment[]
-  branch       Branch        @relation(fields: [branchId], references: [id])
+  branch       Branch         @relation(fields: [branchId], references: [id])
   zone         Zone           @relation(fields: [zoneId], references: [id])
   tableSession tableSession[]
 
@@ -140,14 +151,14 @@ model Menu {
 }
 
 model Category {
-  id        String     @id @default(cuid())
-  name      String
-  menuId    String
+  id          String     @id @default(cuid())
+  name        String
+  menuId      String
   description String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  menu      Menu       @relation(fields: [menuId], references: [id])
-  items     MenuItem[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  menu        Menu       @relation(fields: [menuId], references: [id])
+  items       MenuItem[]
 }
 
 model MenuItem {
@@ -250,4 +261,4 @@ enum subscriptionPlan {
   bronze
   silver
   gold
-  }
+}
