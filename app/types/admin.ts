@@ -21,6 +21,7 @@ export type StaffMember = {
   status: boolean;
   hashedPassword?: string;
   hashedPin?: string;
+  zone?: Zone;
 };
 
 export type Zone = {

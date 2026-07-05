@@ -5,9 +5,21 @@ import { errorAction } from "../response";
 import { authOptions } from "../auth-options";
 import { getServerSession } from "next-auth/next";
 import type { Prisma } from "@prisma/client";
-import { Zone } from "@/app/types/admin";
+import { authenticatedUser, StaffMember, Zone } from "@/app/types/admin";
+import GetAllUserPaginateSchema from "../schemas/GetAllUserPaginateSchema";
+
+type restaurant = {
+  id: string;
+  name: string;
+};
+type branch = {
+  id: string;
+  name: string;
+};
 
 interface GetAllUsersParams {
+  restaurantId: string;
+  branchId: string;
   page?: number;
   pageSize?: number;
   search?: string;
@@ -17,10 +29,10 @@ interface GetAllUsersParams {
 interface GetAllUsersResponse {
   success: boolean;
   data?: {
-    users: any[];
+    users: StaffMember[];
     zoneList: Zone[];
-    restaurantList: any[];
-    branchList: any[];
+    restaurant: restaurant;
+    branch: branch;
     isNext: boolean;
     currentPage: number;
     totalPages: number;
@@ -31,12 +43,36 @@ interface GetAllUsersResponse {
 }
 
 export async function GetAllUsers({
+  restaurantId,
+  branchId,
   page = 1,
   pageSize = 10,
   search,
   filter,
 }: GetAllUsersParams): Promise<GetAllUsersResponse> {
   try {
+    const validated = GetAllUserPaginateSchema.safeParse({
+      restaurantId,
+      branchId,
+      page,
+      pageSize,
+      search,
+      filter,
+    });
+
+    if (!validated.success) {
+      throw new Error(validated.error.issues[0].message);
+    }
+
+    const {
+      restaurantId: validatedRestaurantId,
+      branchId: validatedBranchId,
+      page: validatedPage,
+      pageSize: validatedPageSize,
+      search: validatedSearch,
+      filter: validatedFilter,
+    } = validated.data;
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user) {
@@ -46,32 +82,32 @@ export async function GetAllUsers({
       };
     }
 
-    const authenticatedUser = session.user as any;
-    const skip = (page - 1) * pageSize;
+    const sessionUser = session.user as authenticatedUser;
+    const skip = (validatedPage - 1) * validatedPageSize;
 
     /**
      * Search
      */
     let where: Prisma.StaffWhereInput = {};
 
-    if (search) {
+    if (validatedSearch) {
       where = {
         OR: [
           {
             name: {
-              contains: search,
+              contains: validatedSearch,
               mode: "insensitive",
             },
           },
           {
             username: {
-              contains: search,
+              contains: validatedSearch,
               mode: "insensitive",
             },
           },
           {
             email: {
-              contains: search,
+              contains: validatedSearch,
               mode: "insensitive",
             },
           },
@@ -80,13 +116,13 @@ export async function GetAllUsers({
     }
 
     /**
-     * Filter by restaurant/branch based on authenticated user role
+     * Filter by restaurant/branch
      */
-    if (authenticatedUser.restaurantId) {
-      where.restaurantId = authenticatedUser.restaurantId;
+    if (validatedRestaurantId) {
+      where.restaurantId = validatedRestaurantId;
     }
-    if (authenticatedUser.branchId) {
-      where.branchId = authenticatedUser.branchId;
+    if (validatedBranchId) {
+      where.branchId = validatedBranchId;
     }
 
     /**
@@ -94,7 +130,7 @@ export async function GetAllUsers({
      */
     let orderBy: Prisma.StaffOrderByWithRelationInput;
 
-    switch (filter) {
+    switch (validatedFilter) {
       case "newest":
         orderBy = {
           createdAt: "desc" as const,
@@ -119,53 +155,20 @@ export async function GetAllUsers({
         };
     }
 
+    // Fetch restaurant and branch from params
+    const restaurant = await prisma.restaurant.findFirst({
+      where: { id: validatedRestaurantId },
+    });
+    const branch = await prisma.branch.findFirst({
+      where: { id: validatedBranchId },
+    });
+
     /**
-     * Build zone where clause
+     * Build zone where clause: fetch all zones for this branch
      */
     let zoneWhere: Prisma.ZoneWhereInput = {};
-    if (authenticatedUser.branchId) {
-      zoneWhere.branchId = authenticatedUser.branchId;
-    } else if (authenticatedUser.restaurantId) {
-      zoneWhere.branch = {
-        restaurantId: authenticatedUser.restaurantId,
-      };
-    }
+    zoneWhere.branchId = validatedBranchId;
 
-    /**
-     * Fetch Restaurants and Branches based on user
-     */
-    let restaurantList: any[] = [];
-    let branchList: any[] = [];
-
-    if (authenticatedUser.companyId) {
-      // Owner: fetch all restaurants and branches for their company
-      restaurantList = await prisma.restaurant.findMany({
-        where: { companyId: authenticatedUser.companyId },
-      });
-      branchList = await prisma.branch.findMany({
-        where: {
-          restaurant: { companyId: authenticatedUser.companyId },
-        },
-      });
-    } else if (authenticatedUser.restaurantId) {
-      // Manager or higher with restaurant access
-      restaurantList = await prisma.restaurant.findMany({
-        where: { id: authenticatedUser.restaurantId },
-      });
-      if (authenticatedUser.branchId) {
-        branchList = await prisma.branch.findMany({
-          where: { id: authenticatedUser.branchId },
-        });
-      } else {
-        branchList = await prisma.branch.findMany({
-          where: { restaurantId: authenticatedUser.restaurantId },
-        });
-      }
-    }
-
-    /**
-     * Execute queries in one transaction
-     */
     const [totalUsers, users, zoneList] = await prisma.$transaction([
       prisma.staff.count({
         where,
@@ -175,7 +178,7 @@ export async function GetAllUsers({
         where,
         orderBy,
         skip,
-        take: pageSize,
+        take: validatedPageSize,
 
         select: {
           id: true,
@@ -200,6 +203,12 @@ export async function GetAllUsers({
               name: true,
             },
           },
+          zone: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       }),
 
@@ -208,20 +217,19 @@ export async function GetAllUsers({
       }),
     ]);
 
-    const totalPages = Math.ceil(totalUsers / pageSize);
-
-    const isNext = page < totalPages;
+    const totalPages = Math.ceil(totalUsers / validatedPageSize);
+    const isNext = validatedPage < totalPages;
 
     return {
       success: true,
 
       data: {
-        users: users,
-        zoneList,
-        restaurantList,
-        branchList,
+        users: users as StaffMember[],
+        zoneList: zoneList as Zone[],
+        restaurant,
+        branch,
         isNext,
-        currentPage: page,
+        currentPage: validatedPage,
         totalPages,
         totalUsers,
       },

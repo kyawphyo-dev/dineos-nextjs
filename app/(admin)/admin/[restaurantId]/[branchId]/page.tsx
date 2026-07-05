@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth-options";
 import { getServerSession } from "next-auth";
 import GetDashboardData from "@/lib/actions/GetDashboardData.action";
 import { toast } from "sonner";
-type Params = {
+export type Params = {
   restaurantId: string;
   branchId: string;
 };
