@@ -112,8 +112,8 @@ model Table {
   tableNumber  String
   capacity     Int
   status       TableStatus    @default(available)
-  session      Boolean
-  qr           String         @unique
+  session      Boolean        @default(false) 
+  qr           String?         @unique
   branchId     String
   zoneId       String
   createdAt    DateTime       @default(now())

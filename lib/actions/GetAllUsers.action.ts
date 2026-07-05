@@ -166,7 +166,7 @@ export async function GetAllUsers({
     /**
      * Build zone where clause: fetch all zones for this branch
      */
-    let zoneWhere: Prisma.ZoneWhereInput = {};
+    const zoneWhere: Prisma.ZoneWhereInput = {};
     zoneWhere.branchId = validatedBranchId;
 
     const [totalUsers, users, zoneList] = await prisma.$transaction([

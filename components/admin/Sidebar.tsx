@@ -14,6 +14,7 @@ import {
   Wallet,
   Split,
   LayoutDashboard,
+  LayoutTemplate,
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
 
@@ -44,6 +45,12 @@ export default function Sidebar() {
     {
       label: "Catalog",
       items: [
+        {
+          href: `/admin/${restaurantId}/${branchId}/zones`,
+          label: "Zone",
+          icon: LayoutTemplate,
+          segment: "/categories",
+        },
         {
           href: `/admin/${restaurantId}/${branchId}/categories`,
           label: "Categories",

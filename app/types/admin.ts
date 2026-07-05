@@ -28,6 +28,8 @@ export type Zone = {
   id: string;
   name: string;
   branchId: string | null;
+  tables?: AdminTable[];
+  staff?: StaffMember[];
 };
 
 export type MenuCategory = {
