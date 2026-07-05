@@ -21,12 +21,15 @@ export type StaffMember = {
   status: boolean;
   hashedPassword?: string;
   hashedPin?: string;
+  zone?: Zone;
 };
 
 export type Zone = {
   id: string;
   name: string;
   branchId: string | null;
+  tables?: AdminTable[];
+  staff?: StaffMember[];
 };
 
 export type MenuCategory = {

@@ -8,9 +8,7 @@ export default function BranchLayout({
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 px-5 sm:px-8 py-6 max-w-6xl">
-        {children}
-      </main>
+      <main className="flex-1 px-5 sm:px-8 py-6 max-w-6xl">{children}</main>
     </div>
   );
 }

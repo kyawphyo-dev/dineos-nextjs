@@ -1,12 +1,28 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Plus, Trash2, Lock } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
 import { useRole } from "@/context/RoleContext";
-import type { StaffMember, StaffRole, Zone } from "@/app/types/admin";
+import type {
+  authenticatedUser,
+  StaffMember,
+  StaffRole,
+  Zone,
+} from "@/app/types/admin";
 import CreateStaff from "@/lib/actions/CreateUser.action";
 import { toast } from "sonner";
 import UpdateUserRole from "@/lib/actions/UpdateUserRole.action";
+import UpdateStaffZone from "@/lib/actions/UpdateStaffZone.action";
+import StaffDelete from "@/lib/actions/StaffDelete.action";
+
+type restaurant = {
+  id: string;
+  name: string;
+};
+type branch = {
+  id: string;
+  name: string;
+};
 
 const ROLE_LABEL: Record<StaffRole, string> = {
   owner: "Owner",
@@ -28,16 +44,16 @@ export default function StaffDashboard({
   staff,
   totalStaff,
   zoneList,
-  restaurantList,
-  branchList,
+  restaurant,
+  branch,
   currentUser,
 }: {
   staff: StaffMember[];
   totalStaff: number;
   zoneList: Zone[];
-  restaurantList: any[];
-  branchList: any[];
-  currentUser: any;
+  restaurant: restaurant;
+  branch: branch;
+  currentUser: authenticatedUser;
 }) {
   const { role } = useRole();
   const [name, setName] = useState("");
@@ -46,61 +62,10 @@ export default function StaffDashboard({
   const [password, setPassword] = useState("");
   const [pin, setPin] = useState("");
   const [newRole, setNewRole] = useState<StaffRole>("front_staff");
-  const [selectedRestaurantId, setSelectedRestaurantId] = useState("");
-  const [selectedBranchId, setSelectedBranchId] = useState("");
-  const [selectedZoneId, setSelectedZoneId] = useState("");
-  const [filteredZones, setFilteredZones] = useState<Zone[]>([]);
-  const [filteredBranches, setFilteredBranches] = useState<any[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState(
+    zoneList.length > 0 ? zoneList[0].id : "",
+  );
   const [loading, setLoading] = useState(false);
-
-  // Pre-select restaurant/branch/zone if currentUser has them
-  useEffect(() => {
-    if (currentUser.restaurantId) {
-      setSelectedRestaurantId(currentUser.restaurantId);
-    } else if (restaurantList.length > 0) {
-      setSelectedRestaurantId(restaurantList[0].id);
-    }
-
-    if (currentUser.branchId) {
-      setSelectedBranchId(currentUser.branchId);
-    } else if (filteredBranches.length > 0) {
-      setSelectedBranchId(filteredBranches[0].id);
-    }
-  }, [currentUser, restaurantList, filteredBranches]);
-
-  // Filter branches based on selected restaurant
-  useEffect(() => {
-    if (selectedRestaurantId) {
-      const branches = branchList.filter(
-        (b) => b.restaurantId === selectedRestaurantId,
-      );
-      setFilteredBranches(branches);
-      if (
-        branches.length > 0 &&
-        !filteredBranches.find((b) => b.id === selectedBranchId)
-      ) {
-        setSelectedBranchId(branches[0].id);
-      }
-    } else {
-      setFilteredBranches([]);
-    }
-  }, [selectedRestaurantId, branchList]);
-
-  // Filter zones based on selected branch
-  useEffect(() => {
-    if (selectedBranchId) {
-      const zones = zoneList.filter((z) => z.branchId === selectedBranchId);
-      setFilteredZones(zones);
-      if (
-        zones.length > 0 &&
-        !filteredZones.find((z) => z.id === selectedZoneId)
-      ) {
-        setSelectedZoneId(zones[0].id);
-      }
-    } else {
-      setFilteredZones([]);
-    }
-  }, [selectedBranchId, zoneList]);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,8 +78,8 @@ export default function StaffDashboard({
         password,
         pin,
         role: newRole,
-        restaurantId: selectedRestaurantId,
-        branchId: selectedBranchId,
+        restaurantId: restaurant.id,
+        branchId: branch.id,
         zoneId: selectedZoneId,
       });
 
@@ -151,8 +116,28 @@ export default function StaffDashboard({
     window.location.reload();
   };
 
-  const handleRemove = (id: string) => {
-    // TODO: Implement remove staff
+  const handleZoneChange = async (id: string, nextZoneId: string) => {
+    const result = await UpdateStaffZone({
+      id,
+      zoneId: nextZoneId,
+    });
+    if (!result?.success) {
+      toast.error(result.message || "Failed to update zone.");
+      return;
+    }
+    toast.success("Zone updated successfully.");
+    window.location.reload();
+  };
+
+  const handleRemove = async (id: string) => {
+    const result = await StaffDelete(id);
+    if (!result?.success) {
+      toast.error(result.message || "Failed to delete staff member.");
+      console.log(result);
+      return;
+    }
+    toast.success("Staff member deleted successfully.");
+    window.location.reload();
   };
 
   return (
@@ -221,54 +206,27 @@ export default function StaffDashboard({
           </select>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
-          {restaurantList.length > 0 && !currentUser.restaurantId && (
+          {zoneList.length > 0 ? (
             <select
-              value={selectedRestaurantId}
-              onChange={(e) => {
-                setSelectedRestaurantId(e.target.value);
-              }}
-              className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[13px] outline-none focus:border-clay"
+              value={selectedZoneId}
+              onChange={(e) => setSelectedZoneId(e.target.value)}
+              className="flex-1 min-w-[200px] rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
               required
             >
-              <option value="">Select restaurant</option>
-              {restaurantList.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.name}
+              {zoneList.map((z) => (
+                <option key={z.id} value={z.id}>
+                  {z.name}
                 </option>
               ))}
             </select>
+          ) : (
+            <div className="flex-1 min-w-[200px] rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] text-text-hint">
+              No zones available
+            </div>
           )}
-          {filteredBranches.length > 0 && !currentUser.branchId && (
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="w-full rounded-xl border border-black/10 px-3 py-2.5 text-[13px] outline-none focus:border-clay"
-              required
-            >
-              <option value="">Select branch</option>
-              {filteredBranches.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          )}
-          <select
-            value={selectedZoneId}
-            onChange={(e) => setSelectedZoneId(e.target.value)}
-            className="flex-1 min-w-[200px] rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
-            required
-          >
-            <option value="">Select zone</option>
-            {filteredZones.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.name}
-              </option>
-            ))}
-          </select>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || zoneList.length === 0}
             className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5 shrink-0 disabled:opacity-50"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -278,11 +236,12 @@ export default function StaffDashboard({
       </div>
 
       <div className="bg-white rounded-2xl border border-black/8 overflow-hidden">
-        <div className="grid grid-cols-[1.2fr_1fr_1fr_140px_40px] gap-2 px-4 py-2.5 bg-cream-dark text-[10px] font-medium text-text-hint uppercase tracking-wider">
+        <div className="grid grid-cols-[1.2fr_1fr_1fr_120px_120px_40px] gap-2 px-4 py-2.5 bg-cream-dark text-[10px] font-medium text-text-hint uppercase tracking-wider">
           <span>Name</span>
           <span>Email</span>
           <span>Username</span>
           <span>Role</span>
+          <span>Zone</span>
           <span></span>
         </div>
         {staff.map((member, i) => {
@@ -290,7 +249,7 @@ export default function StaffDashboard({
           return (
             <div
               key={member.id}
-              className={`grid grid-cols-[1.2fr_1fr_1fr_140px_40px] gap-2 items-center px-4 py-3 ${
+              className={`grid grid-cols-[1.2fr_1fr_1fr_120px_120px_40px] gap-2 items-center px-4 py-3 ${
                 i !== staff.length - 1 ? "border-b border-black/6" : ""
               }`}
             >
@@ -326,8 +285,26 @@ export default function StaffDashboard({
                   <option value="owner">Owner</option>
                 </select>
               )}
+              {isProtected ? (
+                <span className="text-[12px] text-text-muted truncate">
+                  {member.zone?.name || "—"}
+                </span>
+              ) : (
+                <select
+                  value={member.zoneId || ""}
+                  onChange={(e) => handleZoneChange(member.id, e.target.value)}
+                  className="text-[11px] font-medium px-2 py-1 rounded-full border-none outline-none cursor-pointer bg-cream-dark text-text-hint"
+                >
+                  {zoneList.map((z) => (
+                    <option key={z.id} value={z.id}>
+                      {z.name}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               <button
+                type="button"
                 onClick={() => handleRemove(member.id)}
                 disabled={isProtected}
                 className={`p-1 justify-self-end ${

@@ -22,7 +22,6 @@ interface CreateStaffParams {
 
 export default async function CreateStaff(params: CreateStaffParams) {
   try {
-    // Validate all required fields
     const validate = CreateUserSchema.safeParse(params);
     if (!validate.success) {
       return {

@@ -4,15 +4,23 @@ import { GetAllUsers } from "@/lib/actions/GetAllUsers.action";
 import type { StaffMember, Zone } from "@/app/types/admin";
 import { authOptions } from "@/lib/auth-options";
 import { getServerSession } from "next-auth";
+import { Params } from "../page";
 
-export default async function StaffPage() {
+export default async function StaffPage({
+  params,
+}: {
+  params: Promise<Params>;
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
     return <div>Unauthorized</div>;
   }
+  const { restaurantId, branchId } = await params;
 
   const result = await GetAllUsers({
+    restaurantId,
+    branchId,
     page: 1,
     pageSize: 15,
     search: "",
@@ -22,13 +30,13 @@ export default async function StaffPage() {
   if (!result || !result.success) {
     return <div>Error loading staff</div>;
   }
-
+  console.log(result);
   const {
     totalUsers = 0,
     users = [],
     zoneList = [],
-    restaurantList = [],
-    branchList = [],
+    restaurant,
+    branch,
   } = result.data || {};
 
   const mappedStaff: StaffMember[] = users.map((user: any) => ({
@@ -41,6 +49,7 @@ export default async function StaffPage() {
     branchId: user.branchId,
     zoneId: user.zoneId,
     status: user.status,
+    zone: user.zone || undefined,
   }));
 
   return (
@@ -48,9 +57,9 @@ export default async function StaffPage() {
       <StaffDashboard
         staff={mappedStaff}
         totalStaff={totalUsers}
-        zoneList={zoneList}
-        restaurantList={restaurantList}
-        branchList={branchList}
+        zoneList={zoneList || []}
+        restaurant={restaurant || { id: restaurantId, name: "" }}
+        branch={branch || { id: branchId, name: "" }}
         currentUser={session.user}
       />
     </RouteGuard>
