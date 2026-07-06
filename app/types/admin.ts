@@ -79,11 +79,11 @@ export type StaffPerformanceRow = {
 
 export type authenticatedUser = {
   id: string;
-  name?: string;
-  email?: string;
+  name?: string | null;
+  email?: string | null;
   username?: string;
   role?: StaffRole;
-  companyId?: string;
-  restaurantId?: string;
-  branchId?: string;
+  companyId?: string | null;
+  restaurantId?: string | null;
+  branchId?: string | null;
 };

@@ -1,3 +1,20 @@
+export type Table = {
+  id: string;
+  tableNumber: string;
+  capacity: number;
+  status: string;
+  qr?: string | null;
+  branchId: string;
+  zoneId: string;
+  zone?: {
+    id?: string;
+    name?: string;
+    branchId?: string;
+  };
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
 export type Branch = {
   id: string;
   name: string;

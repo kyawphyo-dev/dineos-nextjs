@@ -23,6 +23,7 @@ type DashboardCounts = {
   orders: number;
   tables: number;
   packages: number;
+  zone: number;
 };
 
 type DashboardData = {
@@ -40,6 +41,12 @@ export default function AdminDashboard({ data }: AdminDashboardProps) {
   const { restaurantId, branchId } = useParams();
 
   const cards = [
+    {
+      href: `/admin/${restaurantId}/${branchId}/zones`,
+      label: "Zones",
+      icon: Soup,
+      value: data.counts.zone,
+    },
     {
       href: `/admin/${restaurantId}/${branchId}/menu`,
       label: "Menus",

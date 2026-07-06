@@ -26,7 +26,6 @@ export default async function AdminHomePage({
   }
 
   const result = await GetDashboardData({ restaurantId, branchId });
-  console.log("dashboard data", result);
 
   if (!result.success || !result.data) {
     return (

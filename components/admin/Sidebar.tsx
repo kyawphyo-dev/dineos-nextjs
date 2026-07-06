@@ -17,8 +17,13 @@ import {
   LayoutTemplate,
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
+import { useSession } from "next-auth/react";
 
-export default function Sidebar() {
+export default function Sidebar({
+  restaurantName,
+}: {
+  restaurantName?: string;
+}) {
   const pathname = usePathname();
   const { role, canViewSalesReports } = useRole();
   const { restaurantId, branchId } = useParams();
@@ -49,7 +54,7 @@ export default function Sidebar() {
           href: `/admin/${restaurantId}/${branchId}/zones`,
           label: "Zone",
           icon: LayoutTemplate,
-          segment: "/categories",
+          segment: "/zones",
         },
         {
           href: `/admin/${restaurantId}/${branchId}/categories`,
@@ -107,7 +112,6 @@ export default function Sidebar() {
       ],
     },
   ];
-
   return (
     <div className="w-56 bg-cream-dark border-r border-black/8 shrink-0 px-3 py-4 hidden md:flex md:flex-col">
       <Link
@@ -118,7 +122,7 @@ export default function Sidebar() {
           <ChefHat className="w-3.5 h-3.5 text-white" />
         </div>
         <span className="text-[13px] font-semibold text-text-primary">
-          DineOS Admin
+          {restaurantName || "DineOS Admin Dashboard"}
         </span>
       </Link>
       <p className="text-[10px] text-text-hint px-2 pb-3 capitalize">

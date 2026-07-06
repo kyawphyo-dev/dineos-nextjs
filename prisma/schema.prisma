@@ -112,7 +112,6 @@ model Table {
   tableNumber  String
   capacity     Int
   status       TableStatus    @default(available)
-  session      Boolean        @default(false) 
   qr           String?         @unique
   branchId     String
   zoneId       String
@@ -166,6 +165,7 @@ model MenuItem {
   name        String
   price       Decimal
   description String?
+  status      menuStatus  @default(available)
   imageUrl    String?
   categoryId  String
   createdAt   DateTime    @default(now())
@@ -261,4 +261,9 @@ enum subscriptionPlan {
   bronze
   silver
   gold
+}
+
+enum menuStatus {
+  available
+  soldOut
 }
