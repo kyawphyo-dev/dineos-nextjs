@@ -9,17 +9,6 @@ import type {
   StaffPerformanceRow,
 } from "@/app/types/admin";
 
-export const INITIAL_STAFF: StaffMember[] = [
-  { id: "s1", name: "Khun Anan", role: "owner", assignedTo: "All access", status: "active" },
-  { id: "s2", name: "Khun Mali", role: "manager", assignedTo: "All access", status: "active" },
-  { id: "s3", name: "Niran S.", role: "front_staff", assignedTo: "Floor 1", status: "active" },
-  { id: "s4", name: "Somchai P.", role: "kitchen", assignedTo: "Grill Station", status: "active" },
-  { id: "s5", name: "Praew K.", role: "cashier", assignedTo: "Front counter", status: "off_shift" },
-  { id: "s6", name: "Ploy T.", role: "kitchen", assignedTo: "Drinks Station", status: "active" },
-  { id: "s7", name: "Korn W.", role: "front_staff", assignedTo: "Floor 1", status: "off_shift" },
-  { id: "s8", name: "Aom R.", role: "cashier", assignedTo: "Front counter", status: "active" },
-];
-
 export const INITIAL_CATEGORIES: MenuCategory[] = [
   { id: "c1", name: "Soups", itemCount: 4 },
   { id: "c2", name: "Mains", itemCount: 8 },
@@ -29,18 +18,64 @@ export const INITIAL_CATEGORIES: MenuCategory[] = [
 ];
 
 export const INITIAL_ADMIN_MENU_ITEMS: AdminMenuItem[] = [
-  { id: "m1", name: "Massaman Curry", categoryId: "c2", price: 180, available: true },
-  { id: "m2", name: "Tom Yum Goong", categoryId: "c1", price: 160, available: true },
-  { id: "m3", name: "Som Tum Salad", categoryId: "c3", price: 120, available: true },
+  {
+    id: "m1",
+    name: "Massaman Curry",
+    categoryId: "c2",
+    price: 180,
+    available: true,
+  },
+  {
+    id: "m2",
+    name: "Tom Yum Goong",
+    categoryId: "c1",
+    price: 160,
+    available: true,
+  },
+  {
+    id: "m3",
+    name: "Som Tum Salad",
+    categoryId: "c3",
+    price: 120,
+    available: true,
+  },
   { id: "m4", name: "Pad Thai", categoryId: "c2", price: 150, available: true },
-  { id: "m5", name: "Tom Kha Gai", categoryId: "c1", price: 140, available: false },
-  { id: "m6", name: "Mango Sticky Rice", categoryId: "c4", price: 90, available: true },
-  { id: "m7", name: "Thai Iced Tea", categoryId: "c5", price: 60, available: true },
+  {
+    id: "m5",
+    name: "Tom Kha Gai",
+    categoryId: "c1",
+    price: 140,
+    available: false,
+  },
+  {
+    id: "m6",
+    name: "Mango Sticky Rice",
+    categoryId: "c4",
+    price: 90,
+    available: true,
+  },
+  {
+    id: "m7",
+    name: "Thai Iced Tea",
+    categoryId: "c5",
+    price: 60,
+    available: true,
+  },
 ];
 
 export const INITIAL_ADMIN_PACKAGES: AdminPackage[] = [
-  { id: "p1", name: "Buffet Premier", description: "Unlimited dishes · All-day", price: 449 },
-  { id: "p2", name: "Dine-in Set Menu", description: "3-course · À la carte add-ons", price: 299 },
+  {
+    id: "p1",
+    name: "Buffet Premier",
+    description: "Unlimited dishes · All-day",
+    price: 449,
+  },
+  {
+    id: "p2",
+    name: "Dine-in Set Menu",
+    description: "3-course · À la carte add-ons",
+    price: 299,
+  },
 ];
 
 export const INITIAL_ADMIN_TABLES: AdminTable[] = [

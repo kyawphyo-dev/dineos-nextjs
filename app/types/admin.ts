@@ -51,6 +51,7 @@ export type AdminPackage = {
   name: string;
   description: string;
   price: number;
+  branchId?: string | null;
 };
 
 export type AdminTable = {
@@ -87,3 +88,8 @@ export type authenticatedUser = {
   restaurantId?: string | null;
   branchId?: string | null;
 };
+
+export interface AdminInterface {
+  restaurantId: string;
+  branchId: string;
+}
