@@ -15,6 +15,7 @@ import {
   Split,
   LayoutDashboard,
   LayoutTemplate,
+  NotebookText,
 } from "lucide-react";
 import { useRole } from "@/context/RoleContext";
 import { useSession } from "next-auth/react";
@@ -43,7 +44,7 @@ export default function Sidebar({
           href: `/admin/${restaurantId}/${branchId}`,
           label: "Admin Dashboard",
           icon: LayoutDashboard,
-          exact: true, // Flag for exact matching
+          exact: true,
         },
       ],
     },
@@ -57,16 +58,10 @@ export default function Sidebar({
           segment: "/zones",
         },
         {
-          href: `/admin/${restaurantId}/${branchId}/categories`,
-          label: "Categories",
-          icon: Tag,
-          segment: "/categories",
-        },
-        {
-          href: `/admin/${restaurantId}/${branchId}/menu`,
-          label: "Menu items",
-          icon: Soup,
-          segment: "/menu",
+          href: `/admin/${restaurantId}/${branchId}/tables`,
+          label: "Tables",
+          icon: UtensilsCrossed,
+          segment: "/tables",
         },
         {
           href: `/admin/${restaurantId}/${branchId}/packages`,
@@ -75,10 +70,22 @@ export default function Sidebar({
           segment: "/packages",
         },
         {
-          href: `/admin/${restaurantId}/${branchId}/tables`,
-          label: "Tables",
-          icon: UtensilsCrossed,
-          segment: "/tables",
+          href: `/admin/${restaurantId}/${branchId}/menu`,
+          label: "Menus",
+          icon: NotebookText,
+          segment: "/menu",
+        },
+        {
+          href: `/admin/${restaurantId}/${branchId}/categories`,
+          label: "Categories",
+          icon: Tag,
+          segment: "/categories",
+        },
+        {
+          href: `/admin/${restaurantId}/${branchId}/menu_items`,
+          label: "Menu Items",
+          icon: Soup,
+          segment: "/menu_items",
         },
       ],
     },
@@ -86,10 +93,10 @@ export default function Sidebar({
       label: "Team",
       items: [
         {
-          href: `/admin/${restaurantId}/${branchId}/staff`,
+          href: `/admin/${restaurantId}/${branchId}/staffs`,
           label: "Staff accounts",
           icon: Users,
-          segment: "/staff",
+          segment: "/staffs",
         },
       ],
     },
@@ -97,10 +104,10 @@ export default function Sidebar({
       label: "Insights",
       items: [
         {
-          href: `/admin/${restaurantId}/${branchId}/reports/staff`,
+          href: `/admin/${restaurantId}/${branchId}/reports/staff_reports`,
           label: "Staff performance",
           icon: BarChart3,
-          segment: "/reports/staff",
+          segment: "/reports/staff_reports",
         },
         {
           href: `/admin/${restaurantId}/${branchId}/reports/sales`,

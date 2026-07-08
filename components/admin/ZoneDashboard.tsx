@@ -44,7 +44,7 @@ function ZoneDashboard({
         />
 
         <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4 w-3/4">
-          <div className="flex gap-3 mb-3">
+          <div className="flex gap-3">
             <input
               value={name}
               type="text"

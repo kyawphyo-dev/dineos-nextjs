@@ -93,3 +93,15 @@ export interface AdminInterface {
   restaurantId: string;
   branchId: string;
 }
+
+export type Menu = {
+  id: string;
+  name: string;
+  branchId: string;
+  categories?: Category[];
+};
+
+export type Category = {
+  id: string;
+  name: string;
+};

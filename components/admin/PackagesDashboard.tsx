@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { Plus, Trash2, Package as PackageIcon } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
@@ -6,6 +7,7 @@ import { toast } from "sonner";
 import AddPackage from "@/lib/actions/CreatePackage.action";
 import DeletePackage from "@/lib/actions/DeletePackage.action";
 import { AdminPackage } from "@/app/types/admin";
+
 type Props = {
   packages: AdminPackage[];
   branchId: string;
@@ -15,14 +17,17 @@ function PackagesDashboard({ packages, branchId }: Props) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const removePackage = async (id: string) => {
     try {
       const res = await DeletePackage(id);
+
       if (!res.success) {
         toast.error(res.message || "Failed to delete package");
         return;
       }
+
       toast.success(res.message || "Package deleted successfully");
       window.location.reload();
     } catch (err) {
@@ -34,23 +39,31 @@ function PackagesDashboard({ packages, branchId }: Props) {
 
   const handleAdd = async () => {
     const priceNum = parseFloat(price);
+
     if (!name.trim() || isNaN(priceNum)) return;
+
     try {
+      setLoading(true);
+
       const res = await AddPackage({
         name,
         description,
         price: priceNum,
         branchId,
       });
+
       if (!res.success) {
         toast.error(res.message || "Failed to add package");
         return;
       }
+
       toast.success("Package added successfully");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to add package");
     } finally {
+      setLoading(false);
       window.location.reload();
+
       setName("");
       setDescription("");
       setPrice("");
@@ -61,37 +74,50 @@ function PackagesDashboard({ packages, branchId }: Props) {
     <div>
       <PageHeader
         title="Packages"
-        subtitle={`${packages.length} dining packages` || "No packages found"}
+        subtitle={`${packages.length} dining packages`}
       />
 
-      <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4 flex flex-wrap gap-2">
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Package name"
-          className="flex-1 min-w-[140px] rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
-        />
-        <input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Description"
-          className="flex-1 min-w-[160px] rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
-        />
-        <input
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          placeholder="Price ฿ / person"
-          inputMode="decimal"
-          className="w-32 rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
-        />
-        <button
-          onClick={handleAdd}
-          className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5 flex-shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add
-        </button>
-      </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleAdd();
+        }}
+      >
+        <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4 flex flex-wrap gap-2">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Package name"
+            className="flex-1 min-w-[140px] rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
+            required
+          />
+
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description"
+            className="flex-1 min-w-[160px] rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
+          />
+
+          <input
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            placeholder="Price ฿ / person"
+            inputMode="decimal"
+            className="w-32 rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
+            required
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5 flex-shrink-0 disabled:opacity-50"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            {loading ? "Adding..." : "Add"}
+          </button>
+        </div>
+      </form>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {packages.map((pkg) => (
@@ -102,17 +128,21 @@ function PackagesDashboard({ packages, branchId }: Props) {
             <div className="w-9 h-9 rounded-lg bg-clay-light flex items-center justify-center flex-shrink-0">
               <PackageIcon className="w-4 h-4 text-clay-dark" />
             </div>
+
             <div className="flex-1 min-w-0">
               <p className="text-[13px] font-medium text-text-primary">
                 {pkg.name}
               </p>
+
               <p className="text-[11px] text-text-muted mt-0.5">
                 {pkg.description}
               </p>
+
               <p className="text-[13px] font-medium text-clay-dark mt-1.5">
                 ฿{pkg.price} / person
               </p>
             </div>
+
             <button
               onClick={() => removePackage(pkg.id)}
               className="text-text-hint hover:text-rose p-1 flex-shrink-0"
@@ -122,6 +152,7 @@ function PackagesDashboard({ packages, branchId }: Props) {
           </div>
         ))}
       </div>
+
       {packages.length === 0 && (
         <p className="text-center text-text-hint text-[13px] py-10">
           No packages yet.
@@ -130,4 +161,5 @@ function PackagesDashboard({ packages, branchId }: Props) {
     </div>
   );
 }
+
 export default PackagesDashboard;
