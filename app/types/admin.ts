@@ -94,14 +94,30 @@ export interface AdminInterface {
   branchId: string;
 }
 
+export type MenuItem = {
+  id: string;
+  name: string;
+  price: number;
+  description?: string | null;
+  status: "available" | "soldOut";
+  imageUrl?: string | null;
+  categoryId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Menu = {
   id: string;
   name: string;
   branchId: string;
   categories?: Category[];
+  items?: AdminMenuItem[];
 };
 
 export type Category = {
   id: string;
   name: string;
+  description?: string | null;
+  menuId: string;
+  items?: MenuItem[];
 };
