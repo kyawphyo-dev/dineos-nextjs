@@ -50,7 +50,6 @@ export default function TablesDashboard({ tables, zones, branchId }: Props) {
 
   const handleAdd = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-
     setLoading(true);
     try {
       const capacityNum = parseInt(capacity);

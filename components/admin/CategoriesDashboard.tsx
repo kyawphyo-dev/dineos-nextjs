@@ -1,0 +1,271 @@
+"use client";
+import PageHeader from "@/components/admin/PageHeader";
+
+import { useState } from "react";
+import { Plus, Trash2, Tag, BookOpen } from "lucide-react";
+import { Menu } from "@/app/types/admin";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import CreateCategory from "@/lib/actions/CreateCategory.action";
+
+function CategoriesDashboard({
+  menuList: initialMenuList,
+}: {
+  menuList: Menu[];
+}) {
+  const router = useRouter();
+  const [menuList, setMenuList] = useState(initialMenuList);
+  const [form, setForm] = useState({
+    name: "",
+    menuId: "",
+    description: "",
+  });
+  const [error, setError] = useState("");
+
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!form.name.trim()) return setError("Please enter a category name");
+    if (!form.menuId) return setError("Please select a menu");
+    try {
+      const result = await CreateCategory({ form });
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      setForm({
+        name: "",
+        menuId: "",
+        description: "",
+      });
+      window.location.reload();
+    } catch (e) {
+      toast.error("Something went wrong");
+      console.error(e);
+    } finally {
+      setError("");
+    }
+  };
+
+  const handleDeleteMenu = (menuId: string) => {
+    setMenuList((prev) => prev.filter((m) => m.id !== menuId));
+    toast.success("Menu deleted (demo)");
+  };
+
+  const handleDeleteCategory = (menuId: string, categoryId: string) => {
+    setMenuList((prev) =>
+      prev.map((menu) => {
+        if (menu.id === menuId) {
+          return {
+            ...menu,
+            categories: menu.categories?.filter((c) => c.id !== categoryId),
+          };
+        }
+        return menu;
+      }),
+    );
+    toast.success("Category deleted (demo)");
+  };
+
+  const handleDeleteItem = (
+    menuId: string,
+    categoryId: string,
+    itemId: string,
+  ) => {
+    setMenuList((prev) =>
+      prev.map((menu) => {
+        if (menu.id === menuId) {
+          return {
+            ...menu,
+            categories: menu.categories?.map((cat) => {
+              if (cat.id === categoryId) {
+                return {
+                  ...cat,
+                  items: cat.items?.filter((item) => item.id !== itemId),
+                };
+              }
+              return cat;
+            }),
+          };
+        }
+        return menu;
+      }),
+    );
+    toast.success("Item deleted (demo)");
+  };
+
+  return (
+    <div>
+      <PageHeader
+        title="Categories & Menus"
+        subtitle={`${menuList.length} menus`}
+      />
+      <div className="flex items-center text-center justify-center mb-5">
+        {error && (
+          <div className="w-1/2 bg-rose-light text-rose text-[12px] rounded-xl px-3.5 py-2.5">
+            {error}
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4 flex gap-2">
+        <input
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd(e)}
+          placeholder="New category name (e.g. Beverages)"
+          className="flex-1 rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
+        />
+        <input
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd(e)}
+          placeholder="Description (Optional)"
+          className="flex-1 rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
+        />
+        <select
+          value={form.menuId}
+          onChange={(e) => setForm({ ...form, menuId: e.target.value })}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd(e)}
+          className="min-w-[180px] rounded-xl border border-black/10 px-4 py-2.5 text-sm outline-none focus:border-clay"
+        >
+          <option value="">Select Menu</option>
+          {menuList.map((menu) => (
+            <option key={menu.id} value={menu.id}>
+              {menu.name}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={(e) => handleAdd(e)}
+          className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5 flex-shrink-0"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add
+        </button>
+      </div>
+
+      <div className="space-y-6">
+        {menuList.map((menu) => (
+          <div
+            key={menu.id}
+            className=" rounded-2xl border border-black/8 overflow-hidden"
+          >
+            <div className="px-4 py-3 bg-cream-dark border-b border-black/6 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-clay-light flex items-center justify-center flex-shrink-0">
+                <BookOpen className="w-3.5 h-3.5 text-clay-dark" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[13px] font-medium text-text-primary">
+                  {menu.name}
+                </p>
+                <p className="text-[11px] text-text-hint">
+                  {menu.categories?.length || 0} categories
+                </p>
+              </div>
+              <button
+                onClick={() => handleDeleteMenu(menu.id)}
+                className="text-text-hint hover:text-rose p-1.5"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+            {menu.categories && menu.categories.length > 0 ? (
+              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {menu.categories.map((category) => (
+                  <div
+                    key={category.id}
+                    className="bg-white rounded-xl border border-black/6 overflow-hidden"
+                  >
+                    <div className="px-3 py-2 bg-sage-light/30 border-b border-black/4 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-sage-light flex items-center justify-center flex-shrink-0">
+                        <Tag className="w-3 h-3 text-sage" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[12px] font-medium text-text-primary">
+                          {category.name}
+                        </p>
+                        <p className="text-[10px] text-text-hint">
+                          {category.items?.length || 0} items
+                        </p>
+                      </div>
+                      <button
+                        onClick={() =>
+                          handleDeleteCategory(menu.id, category.id)
+                        }
+                        className="text-text-hint hover:text-rose p-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    {category.description && (
+                      <p className="px-3 py-1 text-[10px] text-text-hint border-b border-black/4">
+                        {category.description}
+                      </p>
+                    )}
+                    {/* {category.items && category.items.length > 0 ? (
+                      <div className="p-2 space-y-1">
+                        {category.items.map((item) => (
+                          <div
+                            key={item.id}
+                            className="bg-white rounded-lg border border-black/4 p-2 flex items-center justify-between"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[11px] font-medium text-text-primary truncate">
+                                {item.name}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className="text-[11px] font-medium text-clay-dark">
+                                ฿{item.price}
+                              </span>
+                              <span
+                                className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full ${item.status === "available" ? "bg-sage-light text-sage" : "bg-rose-light text-rose"}`}
+                              >
+                                {item.status === "available" ? "Avail" : "Sold"}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleDeleteItem(
+                                    menu.id,
+                                    category.id,
+                                    item.id,
+                                  )
+                                }
+                                className="text-text-hint hover:text-rose p-0.5"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 text-center">
+                        <p className="text-[11px] text-text-hint">
+                          No items yet.
+                        </p>
+                      </div>
+                    )} */}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-4 py-6 text-center">
+                <p className="text-[13px] text-text-hint">
+                  No categories yet for this menu.
+                </p>
+              </div>
+            )}
+          </div>
+        ))}
+        {menuList.length === 0 && (
+          <div className="bg-white rounded-2xl border border-black/8 p-6 text-center">
+            <p className="text-[13px] text-text-hint">No menus found.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+export default CategoriesDashboard;
