@@ -4,7 +4,7 @@ const ROUTES = {
   ADMIN_CATEGORY: (restaurantId: string, branchId: string) =>
     `http://localhost:3000/admin/${restaurantId}/${branchId}/categories`,
   ADMIN_MENU: (restaurantId: string, branchId: string) =>
-    `http://localhost:3000/admin/${restaurantId}/${branchId}/menu`,
+    `http://localhost:3000/admin/${restaurantId}/${branchId}/menus`,
   ADMIN_PACKAGES: (restaurantId: string, branchId: string) =>
     `http://localhost:3000/admin/${restaurantId}/${branchId}/packages`,
   ADMIN_TABLES: (restaurantId: string, branchId: string) =>

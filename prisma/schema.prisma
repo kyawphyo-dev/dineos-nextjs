@@ -166,7 +166,10 @@ model MenuItem {
   price       Decimal
   description String?
   status      menuStatus  @default(available)
+  
   imageUrl    String?
+  imageId     String?
+
   categoryId  String
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt

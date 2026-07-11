@@ -24,6 +24,8 @@ export const INITIAL_ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     categoryId: "c2",
     price: 180,
     available: true,
+    description: "Rich and creamy Thai curry with potatoes and peanuts",
+    imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop",
   },
   {
     id: "m2",
@@ -31,6 +33,8 @@ export const INITIAL_ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     categoryId: "c1",
     price: 160,
     available: true,
+    description: "Spicy and sour shrimp soup with lemongrass and kaffir lime",
+    imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&h=300&fit=crop",
   },
   {
     id: "m3",
@@ -38,14 +42,26 @@ export const INITIAL_ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     categoryId: "c3",
     price: 120,
     available: true,
+    description: "Spicy green papaya salad with peanuts and lime",
+    imageUrl: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=400&h=300&fit=crop",
   },
-  { id: "m4", name: "Pad Thai", categoryId: "c2", price: 150, available: true },
+  { 
+    id: "m4", 
+    name: "Pad Thai", 
+    categoryId: "c2", 
+    price: 150, 
+    available: true,
+    description: "Stir-fried rice noodles with shrimp, tofu, and peanuts",
+    imageUrl: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&h=300&fit=crop",
+  },
   {
     id: "m5",
     name: "Tom Kha Gai",
     categoryId: "c1",
     price: 140,
     available: false,
+    description: "Creamy coconut soup with chicken and galangal",
+    imageUrl: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=300&fit=crop",
   },
   {
     id: "m6",
@@ -53,6 +69,8 @@ export const INITIAL_ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     categoryId: "c4",
     price: 90,
     available: true,
+    description: "Sweet sticky rice with ripe mango and coconut cream",
+    imageUrl: "https://images.unsplash.com/photo-1567620905732-2d1ec7ab7445?w=400&h=300&fit=crop",
   },
   {
     id: "m7",
@@ -60,6 +78,8 @@ export const INITIAL_ADMIN_MENU_ITEMS: AdminMenuItem[] = [
     categoryId: "c5",
     price: 60,
     available: true,
+    description: "Sweet and creamy Thai tea with condensed milk",
+    imageUrl: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=300&fit=crop",
   },
 ];
 

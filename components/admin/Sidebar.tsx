@@ -70,10 +70,10 @@ export default function Sidebar({
           segment: "/packages",
         },
         {
-          href: `/admin/${restaurantId}/${branchId}/menu`,
+          href: `/admin/${restaurantId}/${branchId}/menus`,
           label: "Menus",
           icon: NotebookText,
-          segment: "/menu",
+          segment: "/menus",
         },
         {
           href: `/admin/${restaurantId}/${branchId}/categories`,
