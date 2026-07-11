@@ -44,6 +44,9 @@ export type AdminMenuItem = {
   categoryId: string;
   price: number;
   available: boolean;
+  description?: string | null;
+  imageUrl?: string | null;
+  imageId?: string | null;
 };
 
 export type AdminPackage = {

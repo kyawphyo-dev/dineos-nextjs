@@ -1,18 +1,21 @@
-"use server";
 import { getServerSession } from "next-auth";
+import { prisma } from "../prisma";
+import { errorAction } from "../response";
 import GetByBranchIdSchema from "../schemas/GetByBranchIdSchema";
 import { authOptions } from "../auth-options";
-import { errorAction } from "../response";
-import { prisma } from "../prisma";
 import { Menu } from "@/app/types/admin";
 
-async function GetMenuWithCategories(params: { branchId: string }): Promise<{
+async function GetMenuWithCategoriesAndItems({
+  params,
+}: {
+  params: { branchId: string };
+}): Promise<{
   success: boolean;
+  message: string;
   data?: {
-    menuList: Menu[];
+    data: Menu[];
   };
-  message?: string;
-  object?: object | null;
+  details?: object | null;
 }> {
   const validated = GetByBranchIdSchema.safeParse(params);
   if (!validated.success) {
@@ -34,9 +37,9 @@ async function GetMenuWithCategories(params: { branchId: string }): Promise<{
             name: "asc" as const,
           },
           include: {
-            _count: {
-              select: {
-                items: true,
+            items: {
+              orderBy: {
+                name: "asc" as const,
               },
             },
           },
@@ -46,24 +49,15 @@ async function GetMenuWithCategories(params: { branchId: string }): Promise<{
         name: "asc" as const,
       },
     });
-    if (menus.length === 0) {
-      return {
-        success: true,
-        data: {
-          menuList: [],
-        },
-        message: "No menu found.",
-      };
-    }
     return {
       success: true,
       data: {
-        menuList: menus,
+        data: menus,
       },
-      message: "Menu list retrieved successfully.",
+      message: "Success",
     };
   } catch (err) {
     return errorAction(err);
   }
 }
-export default GetMenuWithCategories;
+export default GetMenuWithCategoriesAndItems;
