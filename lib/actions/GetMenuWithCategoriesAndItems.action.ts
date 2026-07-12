@@ -4,6 +4,7 @@ import { errorAction } from "../response";
 import GetByBranchIdSchema from "../schemas/GetByBranchIdSchema";
 import { authOptions } from "../auth-options";
 import { Menu } from "@/app/types/admin";
+import { serializePrisma } from "../serializer";
 
 async function GetMenuWithCategoriesAndItems({
   params,
@@ -52,7 +53,7 @@ async function GetMenuWithCategoriesAndItems({
     return {
       success: true,
       data: {
-        data: menus,
+        data: serializePrisma(menus),
       },
       message: "Success",
     };
