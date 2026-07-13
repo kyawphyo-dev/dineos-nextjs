@@ -1,18 +1,19 @@
 "use client";
 import { useState } from "react";
-import { Plus, Trash2, Upload, X, Edit } from "lucide-react";
+import { Plus, Trash2, Upload, X, Edit, XCircle } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
-import { Menu as MenuType } from "@/app/types/admin";
+import { Menu as MenuType, MenuItem as MenuItemType } from "@/app/types/admin";
 import { CreateMenuItem } from "@/lib/actions/CreateMenuItem.action";
+import { UpdateMenuItem } from "@/lib/actions/UpdateMenuItem.action";
 import DeleteMenuItem from "@/lib/actions/DeleteMenuItem.action";
 import ToggleMenuItemAvailability from "@/lib/actions/ToggleMenuItemAvailability.action";
-import ConfirmDialog from "../shared/ConfirmDelete";
 import ConfirmDelete from "../shared/ConfirmDelete";
 
 type Props = {
   menus?: MenuType[];
 };
 function MenuItemsDashboard({ menus = [] }: Props) {
+  const [editingItem, setEditingItem] = useState<MenuItemType | null>(null);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -37,11 +38,31 @@ function MenuItemsDashboard({ menus = [] }: Props) {
     );
   }, 0);
 
+  const handleEdit = (item: MenuItemType) => {
+    setEditingItem(item);
+    setName(item.name);
+    setPrice(String(item.price));
+    setCategoryId(item.categoryId);
+    setDescription(item.description || "");
+    setImagePreview(item.imageUrl || null);
+    setImageFile(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingItem(null);
+    setName("");
+    setPrice("");
+    setCategoryId("");
+    setDescription("");
+    setImagePreview(null);
+    setImageFile(null);
+    setError("");
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setImageFile(file);
-      // Create preview
       const reader = new FileReader();
       reader.onload = (event) => {
         setImagePreview(event.target?.result as string);
@@ -55,34 +76,42 @@ function MenuItemsDashboard({ menus = [] }: Props) {
     setImageFile(null);
   };
 
-  const handleAdd = async () => {
+  const handleSubmit = async () => {
     if (!name.trim()) return setError("Name is required");
     if (!price.trim()) return setError("Price is required");
     if (!categoryId) return setError("Category is required");
     if (!description.trim()) return setError("Description is required");
     try {
-      const data = await CreateMenuItem({
-        name,
-        price,
-        categoryId,
-        description,
-        image: imageFile || undefined,
-      });
-      if (!data.success) return setError(data.message);
+      if (editingItem) {
+        const data = await UpdateMenuItem({
+          id: editingItem.id,
+          name,
+          price,
+          categoryId,
+          description,
+          image: imageFile || undefined,
+        });
+        if (!data.success) return setError(data.message);
+      } else {
+        const data = await CreateMenuItem({
+          name,
+          price,
+          categoryId,
+          description,
+          image: imageFile || undefined,
+        });
+        if (!data.success) return setError(data.message);
+      }
       setError("");
       window.location.reload();
     } catch (err) {
-      setError("Something went wrong at adding item");
+      setError(
+        editingItem
+          ? "Something went wrong at updating item"
+          : "Something went wrong at adding item",
+      );
       console.error(err);
-    } finally {
-      setName("");
-      setPrice("");
-      setCategoryId("");
-      setDescription("");
-      clearImage();
     }
-
-    setError("");
   };
 
   const handleToggleAvailable = async (itemId: string) => {
@@ -121,6 +150,20 @@ function MenuItemsDashboard({ menus = [] }: Props) {
       />
 
       <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4">
+        {editingItem && (
+          <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-clay/10 rounded-xl">
+            <Edit className="w-4 h-4 text-clay" />
+            <span className="text-sm text-clay font-medium">
+              Editing: {editingItem.name}
+            </span>
+            <button
+              onClick={cancelEdit}
+              className="ml-auto text-text-hint hover:text-rose transition"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          </div>
+        )}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           <div className="lg:col-span-3">
             {imagePreview ? (
@@ -187,13 +230,31 @@ function MenuItemsDashboard({ menus = [] }: Props) {
               rows={2}
               className="w-full rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay resize-none"
             />
-            <div className="flex justify-end">
+            {error && <p className="text-sm text-rose font-medium">{error}</p>}
+            <div className="flex justify-end gap-2">
+              {editingItem && (
+                <button
+                  onClick={cancelEdit}
+                  className="bg-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-[13px] font-medium"
+                >
+                  Cancel
+                </button>
+              )}
               <button
-                onClick={handleAdd}
+                onClick={handleSubmit}
                 className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5"
               >
-                <Plus className="w-3.5 h-3.5" />
-                Add Item
+                {editingItem ? (
+                  <>
+                    <Edit className="w-3.5 h-3.5" />
+                    Update Item
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Item
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -234,7 +295,7 @@ function MenuItemsDashboard({ menus = [] }: Props) {
                                   <img
                                     src={item.imageUrl}
                                     alt={item.name}
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-40 object-cover"
                                   />
                                 ) : (
                                   <div className="w-full h-full flex items-center justify-center text-gray-300">
@@ -249,13 +310,16 @@ function MenuItemsDashboard({ menus = [] }: Props) {
                                     {item.name}
                                   </h4>
                                   <div>
-                                    <button className="text-text-hint hover:text-rose p-1">
+                                    <button
+                                      onClick={() => handleEdit(item)}
+                                      className="text-text-hint hover:text-clay p-1 transition"
+                                    >
                                       <Edit className="w-4 h-4" />
                                     </button>
 
                                     <ConfirmDelete
                                       trigger={
-                                        <button className="text-text-hint hover:text-rose p-1">
+                                        <button className="text-text-hint hover:text-rose p-1 transition">
                                           <Trash2 className="w-4 h-4" />
                                         </button>
                                       }

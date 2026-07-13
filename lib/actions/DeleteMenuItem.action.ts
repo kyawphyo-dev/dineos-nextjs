@@ -1,4 +1,5 @@
 "use server";
+import cloudinary from "../cloudinary";
 import { prisma } from "../prisma";
 
 export default async function DeleteMenuItem(id: string): Promise<{
@@ -6,6 +7,18 @@ export default async function DeleteMenuItem(id: string): Promise<{
   message?: string;
 }> {
   try {
+    const deleteItem = await prisma.menuItem.findUnique({
+      where: {
+        id,
+      },
+    });
+    if (!deleteItem) {
+      return {
+        success: false,
+        message: "Menu item not found.",
+      };
+    }
+    await cloudinary.uploader.destroy(deleteItem.imageId || "");
     await prisma.menuItem.delete({
       where: {
         id,
@@ -19,9 +32,7 @@ export default async function DeleteMenuItem(id: string): Promise<{
     return {
       success: false,
       message:
-        error instanceof Error
-          ? error.message
-          : "Failed to delete menu item.",
+        error instanceof Error ? error.message : "Failed to delete menu item.",
     };
   }
 }

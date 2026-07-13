@@ -3,11 +3,14 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { NotebookText, Plus, Trash2 } from "lucide-react";
+import { NotebookText, Plus, Trash2, Edit, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Menu } from "@/app/types/admin";
 import PageHeader from "@/components/admin/PageHeader";
+import ConfirmDelete from "@/components/shared/ConfirmDelete";
 import CreateMenu from "@/lib/actions/CreateMenu.action";
+import { UpdateMenu } from "@/lib/actions/UpdateMenu.action";
+import { DeleteMenu } from "@/lib/actions/DeleteMenu.action";
 
 type Props = {
   menuList: Menu[];
@@ -19,8 +22,9 @@ function MenuDashboard({ menuList, branchId }: Props) {
 
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
 
-  const handleMenuAdd = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!name.trim()) {
@@ -31,18 +35,33 @@ function MenuDashboard({ menuList, branchId }: Props) {
     try {
       setLoading(true);
 
-      const result = await CreateMenu({
-        name,
-        branchId,
-      });
+      if (editingMenu) {
+        const result = await UpdateMenu({
+          id: editingMenu.id,
+          name,
+          branchId,
+        });
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+        toast.success(result.message);
+      } else {
+        const result = await CreateMenu({
+          name,
+          branchId,
+        });
 
-      if (!result.success) {
-        toast.error(result.message);
-        return;
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+
+        toast.success(result.message);
       }
 
-      toast.success(result.message);
       setName("");
+      setEditingMenu(null);
       router.refresh();
     } catch (error) {
       console.error(error);
@@ -52,13 +71,34 @@ function MenuDashboard({ menuList, branchId }: Props) {
     }
   };
 
+  const handleEditMenu = (menu: Menu) => {
+    setEditingMenu(menu);
+    setName(menu.name);
+  };
+
+  const cancelEdit = () => {
+    setEditingMenu(null);
+    setName("");
+  };
+
   const handleMenuDelete = async (menuId: string) => {
-    alert(`Delete menu ${menuId}`);
+    try {
+      const result = await DeleteMenu(menuId);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      toast.error("Something went wrong");
+    }
   };
 
   return (
     <div>
-      <form onSubmit={handleMenuAdd}>
+      <form onSubmit={handleSubmit}>
         <PageHeader
           title="Menu"
           subtitle={`${menuList.length} menu${
@@ -67,6 +107,21 @@ function MenuDashboard({ menuList, branchId }: Props) {
         />
 
         <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4 w-3/4">
+          {editingMenu && (
+            <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-clay-light rounded-xl">
+              <Edit className="w-4 h-4 text-clay" />
+              <span className="text-sm text-clay font-medium">
+                Editing: {editingMenu.name}
+              </span>
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="ml-auto text-text-hint hover:text-rose transition"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           <div className="flex gap-3">
             <input
               type="text"
@@ -76,14 +131,31 @@ function MenuDashboard({ menuList, branchId }: Props) {
               className="w-full rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
               required
             />
-
+            {editingMenu && (
+              <button
+                type="button"
+                onClick={cancelEdit}
+                className="w-1/4 bg-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-[13px] font-medium"
+              >
+                Cancel
+              </button>
+            )}
             <button
               type="submit"
               disabled={loading}
               className="w-1/4 bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <Plus size={16} />
-              {loading ? "Adding..." : "Add Menu"}
+              {editingMenu ? (
+                <>
+                  <Edit size={16} />
+                  {loading ? "Updating..." : "Update Menu"}
+                </>
+              ) : (
+                <>
+                  <Plus size={16} />
+                  {loading ? "Adding..." : "Add Menu"}
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -103,16 +175,31 @@ function MenuDashboard({ menuList, branchId }: Props) {
                   <NotebookText size={18} className="text-clay-dark" />
                 </div>
 
-                <button
-                  type="button"
-                  className="w-9 h-9 rounded-xl hover:bg-red-50 flex items-center justify-center transition"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleMenuDelete(menu.id);
-                  }}
-                >
-                  <Trash2 size={16} className="text-red-500" />
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    type="button"
+                    className="w-9 h-9 rounded-xl hover:bg-clay/10 flex items-center justify-center transition"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditMenu(menu);
+                    }}
+                  >
+                    <Edit size={16} className="text-clay" />
+                  </button>
+                  <ConfirmDelete
+                    trigger={
+                      <button
+                        type="button"
+                        className="w-9 h-9 rounded-xl hover:bg-red-50 flex items-center justify-center transition"
+                      >
+                        <Trash2 size={16} className="text-red-500" />
+                      </button>
+                    }
+                    title="Delete Menu"
+                    description="Are you sure you want to delete this menu? This will also delete all categories, menu items, and their images from Cloudinary."
+                    onConfirm={() => handleMenuDelete(menu.id)}
+                  />
+                </div>
               </div>
 
               <h3 className="text-[15px] font-semibold">{menu.name}</h3>
