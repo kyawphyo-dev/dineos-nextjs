@@ -1,12 +1,15 @@
 "use client";
 import PageHeader from "@/components/admin/PageHeader";
-
+import ConfirmDelete from "@/components/shared/ConfirmDelete";
 import { useState } from "react";
-import { Plus, Trash2, Tag, BookOpen } from "lucide-react";
-import { Menu } from "@/app/types/admin";
+import { Plus, Trash2, Tag, BookOpen, Edit, XCircle } from "lucide-react";
+import { Menu, Category as CategoryType } from "@/app/types/admin";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import CreateCategory from "@/lib/actions/CreateCategory.action";
+import { UpdateCategory } from "@/lib/actions/UpdateCategory.action";
+import { DeleteCategory } from "@/lib/actions/DeleteCategory.action";
+import { DeleteMenu } from "@/lib/actions/DeleteMenu.action";
 
 function CategoriesDashboard({
   menuList: initialMenuList,
@@ -20,24 +23,45 @@ function CategoriesDashboard({
     menuId: "",
     description: "",
   });
+  const [editingCategory, setEditingCategory] = useState<{
+    id: string;
+    menuId: string;
+    name: string;
+    description?: string | null;
+  } | null>(null);
   const [error, setError] = useState("");
 
-  const handleAdd = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim()) return setError("Please enter a category name");
     if (!form.menuId) return setError("Please select a menu");
     try {
-      const result = await CreateCategory({ form });
-      if (!result.success) {
-        toast.error(result.message);
-        return;
+      if (editingCategory) {
+        const result = await UpdateCategory({
+          id: editingCategory.id,
+          name: form.name,
+          menuId: form.menuId,
+          description: form.description,
+        });
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+        toast.success(result.message);
+      } else {
+        const result = await CreateCategory({ form });
+        if (!result.success) {
+          toast.error(result.message);
+          return;
+        }
+        toast.success(result.message);
       }
-      toast.success(result.message);
       setForm({
         name: "",
         menuId: "",
         description: "",
       });
+      setEditingCategory(null);
       window.location.reload();
     } catch (e) {
       toast.error("Something went wrong");
@@ -47,24 +71,61 @@ function CategoriesDashboard({
     }
   };
 
-  const handleDeleteMenu = (menuId: string) => {
-    setMenuList((prev) => prev.filter((m) => m.id !== menuId));
-    toast.success("Menu deleted (demo)");
+  const handleEditCategory = (
+    category: CategoryType,
+    currentMenuId: string,
+  ) => {
+    setEditingCategory({
+      id: category.id,
+      menuId: currentMenuId,
+      name: category.name,
+      description: category.description,
+    });
+    setForm({
+      name: category.name,
+      menuId: currentMenuId,
+      description: category.description || "",
+    });
   };
 
-  const handleDeleteCategory = (menuId: string, categoryId: string) => {
-    setMenuList((prev) =>
-      prev.map((menu) => {
-        if (menu.id === menuId) {
-          return {
-            ...menu,
-            categories: menu.categories?.filter((c) => c.id !== categoryId),
-          };
-        }
-        return menu;
-      }),
-    );
-    toast.success("Category deleted (demo)");
+  const cancelEdit = () => {
+    setEditingCategory(null);
+    setForm({
+      name: "",
+      menuId: "",
+      description: "",
+    });
+    setError("");
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    try {
+      const result = await DeleteCategory(categoryId);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      window.location.reload();
+    } catch (e) {
+      toast.error("Something went wrong");
+      console.error(e);
+    }
+  };
+
+  const handleDeleteMenu = async (menuId: string) => {
+    try {
+      const result = await DeleteMenu(menuId);
+      if (!result.success) {
+        toast.error(result.message);
+        return;
+      }
+      toast.success(result.message);
+      window.location.reload();
+    } catch (e) {
+      toast.error("Something went wrong");
+      console.error(e);
+    }
   };
 
   const handleDeleteItem = (
@@ -108,41 +169,72 @@ function CategoriesDashboard({
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4 flex gap-2">
-        <input
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          onKeyDown={(e) => e.key === "Enter" && handleAdd(e)}
-          placeholder="New category name (e.g. Beverages)"
-          className="flex-1 rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
-        />
-        <input
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-          onKeyDown={(e) => e.key === "Enter" && handleAdd(e)}
-          placeholder="Description (Optional)"
-          className="flex-1 rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
-        />
-        <select
-          value={form.menuId}
-          onChange={(e) => setForm({ ...form, menuId: e.target.value })}
-          onKeyDown={(e) => e.key === "Enter" && handleAdd(e)}
-          className="min-w-[180px] rounded-xl border border-black/10 px-4 py-2.5 text-sm outline-none focus:border-clay"
-        >
-          <option value="">Select Menu</option>
-          {menuList.map((menu) => (
-            <option key={menu.id} value={menu.id}>
-              {menu.name}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={(e) => handleAdd(e)}
-          className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5 flex-shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add
-        </button>
+      <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4">
+        {editingCategory && (
+          <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-clay-light rounded-xl">
+            <Edit className="w-4 h-4 text-clay" />
+            <span className="text-sm text-clay font-medium">
+              Editing: {editingCategory.name}
+            </span>
+            <button
+              onClick={cancelEdit}
+              className="ml-auto text-text-hint hover:text-rose transition"
+            >
+              <XCircle className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            placeholder="Category name (e.g. Beverages)"
+            className="flex-1 rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
+          />
+          <input
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            placeholder="Description (Optional)"
+            className="flex-1 rounded-xl border border-black/10 px-3.5 py-2.5 text-[13px] outline-none focus:border-clay"
+          />
+          <select
+            value={form.menuId}
+            onChange={(e) => setForm({ ...form, menuId: e.target.value })}
+            className="min-w-[180px] rounded-xl border border-black/10 px-4 py-2.5 text-sm outline-none focus:border-clay"
+          >
+            <option value="">Select Menu</option>
+            {menuList.map((menu) => (
+              <option key={menu.id} value={menu.id}>
+                {menu.name}
+              </option>
+            ))}
+          </select>
+          {editingCategory && (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="bg-gray-100 text-gray-600 rounded-xl px-4 py-2.5 text-[13px] font-medium"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            type="submit"
+            className="bg-clay text-white rounded-xl px-4 py-2.5 text-[13px] font-medium flex items-center gap-1.5 flex-shrink-0"
+          >
+            {editingCategory ? (
+              <>
+                <Edit className="w-3.5 h-3.5" />
+                Update
+              </>
+            ) : (
+              <>
+                <Plus className="w-3.5 h-3.5" />
+                Add
+              </>
+            )}
+          </button>
+        </form>
       </div>
 
       <div className="space-y-6">
@@ -163,12 +255,16 @@ function CategoriesDashboard({
                   {menu.categories?.length || 0} categories
                 </p>
               </div>
-              <button
-                onClick={() => handleDeleteMenu(menu.id)}
-                className="text-text-hint hover:text-rose p-1.5"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <ConfirmDelete
+                trigger={
+                  <button className="text-text-hint hover:text-rose p-1.5 transition">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                }
+                title="Delete Menu"
+                description="Are you sure you want to delete this menu? This will also delete all categories and menu items associated with it, along with their images from Cloudinary."
+                onConfirm={() => handleDeleteMenu(menu.id)}
+              />
             </div>
             {menu.categories && menu.categories.length > 0 ? (
               <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -186,17 +282,25 @@ function CategoriesDashboard({
                           {category.name}
                         </p>
                         <p className="text-[10px] text-text-hint">
-                          {category.items?.length || 0} items
+                          {category._count?.items || 0} items
                         </p>
                       </div>
                       <button
-                        onClick={() =>
-                          handleDeleteCategory(menu.id, category.id)
-                        }
-                        className="text-text-hint hover:text-rose p-1"
+                        onClick={() => handleEditCategory(category, menu.id)}
+                        className="text-text-hint hover:text-clay p-1 transition"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Edit className="w-3.5 h-3.5" />
                       </button>
+                      <ConfirmDelete
+                        trigger={
+                          <button className="text-text-hint hover:text-rose p-1 transition">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        }
+                        title="Delete Category"
+                        description="Are you sure you want to delete this category? This will also delete all menu items in this category, along with their images from Cloudinary."
+                        onConfirm={() => handleDeleteCategory(category.id)}
+                      />
                     </div>
                     {category.description && (
                       <p className="px-3 py-1 text-[10px] text-text-hint border-b border-black/4">
