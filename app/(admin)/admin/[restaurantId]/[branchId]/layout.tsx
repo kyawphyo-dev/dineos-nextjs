@@ -24,18 +24,15 @@ export default async function BranchLayout({
   }
   let restaurantName: string = "DineOS Admin";
   console.log("SESSION DATA:", session);
-  console.log("URL restaurantId:", restaurantId);
 
   // Use the restaurantId from the URL for all users (both owner and staff)
   const restaurant = await prisma.restaurant.findUnique({
     where: { id: restaurantId },
     select: { name: true },
   });
-  console.log("Restaurant fetch by URL id result:", restaurant);
   if (restaurant) {
     restaurantName = restaurant.name;
   }
-  console.log("Final restaurantName:", restaurantName);
   return (
     <div className="flex min-h-screen">
       <Sidebar restaurantName={restaurantName} />

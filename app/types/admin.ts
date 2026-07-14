@@ -49,12 +49,24 @@ export type AdminMenuItem = {
   imageId?: string | null;
 };
 
+export type PackageMenuItem = {
+  id: string;
+  packageId: string;
+  menuItemId: string;
+  createdAt: string;
+  updatedAt: string;
+  menuItem: MenuItem;
+};
+
 export type AdminPackage = {
   id: string;
   name: string;
   description: string;
   price: number;
   branchId?: string | null;
+  imageUrl?: string | null;
+  imageId?: string | null;
+  packageItems?: PackageMenuItem[];
 };
 
 export type AdminTable = {

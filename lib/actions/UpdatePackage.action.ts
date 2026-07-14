@@ -1,6 +1,6 @@
 "use server";
 
-import AddPackageSchema from "../schemas/AddPackageSchema";
+import UpdatePackageSchema from "../schemas/UpdatePackageSchema";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth-options";
 import { errorAction } from "../response";
@@ -9,41 +9,54 @@ import cloudinary from "../cloudinary";
 import { UploadApiResponse } from "cloudinary";
 import { randomUUID } from "crypto";
 
-interface AddPackageParams {
+interface UpdatePackageParams {
+  id: string;
   name: string;
   description: string;
-  price: number;
-  branchId: string;
+  price: string;
   menuItemIds?: string[];
   image?: File;
 }
 
-async function AddPackage(params: AddPackageParams) {
-  const validate = AddPackageSchema.safeParse(params);
+async function UpdatePackage(params: UpdatePackageParams) {
+  const validate = UpdatePackageSchema.safeParse(params);
   if (!validate.success) {
     throw new Error(validate.error.issues[0].message);
   }
-  const { name, description, price, branchId, menuItemIds } = validate.data;
+  const { id, name, description, price, menuItemIds } = validate.data;
   const { image } = params;
   const session = await getServerSession(authOptions);
   if (!session) {
     return errorAction(new Error("Not authenticated"));
   }
   try {
-    const existingPackage = await prisma.package.findFirst({
+    const existingPackage = await prisma.package.findUnique({
+      where: { id },
+    });
+    if (!existingPackage) {
+      throw new Error("Package not found");
+    }
+
+    const duplicatePackage = await prisma.package.findFirst({
       where: {
         name,
-        branchId,
+        branchId: existingPackage.branchId,
+        NOT: { id },
       },
     });
-    if (existingPackage) {
+    if (duplicatePackage) {
       throw new Error("Package name already exists");
     }
 
-    let imageUrl: string | undefined;
-    let imageId: string | undefined;
+    let imageUrl: string | null | undefined = existingPackage.imageUrl;
+    let imageId: string | null | undefined = existingPackage.imageId;
 
     if (image) {
+      // Delete old image if it exists
+      if (existingPackage.imageId) {
+        await cloudinary.uploader.destroy(existingPackage.imageId);
+      }
+
       const arrayBuffer = await image.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
@@ -69,13 +82,11 @@ async function AddPackage(params: AddPackageParams) {
                 if (error) {
                   return reject(error);
                 }
-
                 if (!result) {
                   return reject(
                     new Error("Upload failed: No result from Cloudinary"),
                   );
                 }
-
                 resolve(result);
               },
             )
@@ -87,35 +98,43 @@ async function AddPackage(params: AddPackageParams) {
       imageId = uploadResult.public_id;
     }
 
-    const newPackage = await prisma.package.create({
+    const updatedPackage = await prisma.package.update({
+      where: { id },
       data: {
         name,
         description,
-        price,
-        branchId,
+        price: parseFloat(price),
         imageUrl,
         imageId,
       },
     });
 
+    // Update menu items
     if (menuItemIds) {
+      // Delete old items first
+      await prisma.packageMenuItem.deleteMany({
+        where: { packageId: id },
+      });
+
+      // Add new items
       await prisma.packageMenuItem.createMany({
-        data: menuItemIds.map((id) => ({
-          packageId: newPackage.id,
-          menuItemId: id,
+        data: menuItemIds.map((menuItemId) => ({
+          packageId: id,
+          menuItemId,
         })),
         skipDuplicates: true,
       });
     }
+
     return {
       success: true,
-      message: "Package created successfully.",
+      message: "Package updated successfully.",
       data: {
-        package: JSON.parse(JSON.stringify(newPackage)),
+        package: JSON.parse(JSON.stringify(updatedPackage)),
       },
     };
   } catch (e) {
     return errorAction(e);
   }
 }
-export default AddPackage;
+export default UpdatePackage;

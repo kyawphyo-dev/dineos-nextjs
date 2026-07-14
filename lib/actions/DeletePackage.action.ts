@@ -1,11 +1,23 @@
 "use server";
 import { prisma } from "../prisma";
+import cloudinary from "../cloudinary";
 
 export default async function DeletePackage(id: string): Promise<{
   success: boolean;
   message?: string;
 }> {
   try {
+    const packageToDelete = await prisma.package.findUnique({
+      where: { id },
+    });
+    if (!packageToDelete) {
+      throw new Error("Package not found");
+    }
+
+    if (packageToDelete.imageId) {
+      await cloudinary.uploader.destroy(packageToDelete.imageId);
+    }
+
     await prisma.package.delete({
       where: {
         id,
