@@ -18,6 +18,12 @@ export default async function DeletePackage(id: string): Promise<{
       await cloudinary.uploader.destroy(packageToDelete.imageId);
     }
 
+    await prisma.packageMenuItem.deleteMany({
+      where: {
+        packageId: packageToDelete.id,
+      },
+    });
+
     await prisma.package.delete({
       where: {
         id,
