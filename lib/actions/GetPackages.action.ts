@@ -3,6 +3,7 @@ import { errorAction } from "../response";
 import GetByBranchIdSchema from "../schemas/GetByBranchIdSchema";
 import { authOptions } from "../auth-options";
 import { prisma } from "../prisma";
+import { serializePrisma } from "../serializer";
 import { AdminPackage } from "@/app/types/admin";
 
 async function GetPackages(params: { branchId: string }): Promise<{
@@ -23,11 +24,24 @@ async function GetPackages(params: { branchId: string }): Promise<{
     throw new Error("Not authenticated");
   }
   try {
-    const packages = await prisma.package.findMany({
-      where: {
-        branchId,
-      },
-    });
+    const packages = serializePrisma(
+      await prisma.package.findMany({
+        where: {
+          branchId,
+        },
+        include: {
+          packageItems: {
+            include: {
+              menuItem: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      }),
+    ) as unknown as AdminPackage[];
+
     return {
       success: true,
       data: {

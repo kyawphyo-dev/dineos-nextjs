@@ -71,10 +71,31 @@ model Package {
   name        String
   description String
   price       Int
+  imageUrl    String?
+  imageId     String?
+
   branchId    String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  branch      Branch?  @relation(fields: [branchId], references: [id])
+
+  branch       Branch?            @relation(fields: [branchId], references: [id])
+  packageItems PackageMenuItem[]
+}
+
+model PackageMenuItem {
+  id         String   @id @default(cuid())
+
+  packageId  String
+  menuItemId String
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  package    Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, menuItemId])
 }
 
 model Zone {
@@ -165,16 +186,20 @@ model MenuItem {
   name        String
   price       Decimal
   description String?
-  status      menuStatus  @default(available)
-  
+
+  status      menuStatus @default(available)
+
   imageUrl    String?
   imageId     String?
 
   categoryId  String
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  category    Category    @relation(fields: [categoryId], references: [id])
-  orderItems  OrderItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category     Category          @relation(fields: [categoryId], references: [id])
+  orderItems   OrderItem[]
+  packageItems PackageMenuItem[]
 }
 
 model Order {
