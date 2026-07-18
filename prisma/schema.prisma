@@ -64,6 +64,7 @@ model Branch {
   staff          Staff[]
   tables         Table[]
   zone           Zone[]
+  reservations Reservation[]
 }
 
 model Package {
@@ -81,6 +82,7 @@ model Package {
 
   branch       Branch?            @relation(fields: [branchId], references: [id])
   packageItems PackageMenuItem[]
+  diningSession DiningSession[]
 }
 
 model PackageMenuItem {
@@ -116,7 +118,7 @@ model Staff {
   role           StaffRole
   restaurantId   String
   branchId       String
-  zoneId         String
+  zoneId         String?
   username       String     @unique
   hashedPassword String
   hashedPin      String
@@ -125,7 +127,14 @@ model Staff {
   updatedAt      DateTime   @updatedAt
   branch         Branch     @relation(fields: [branchId], references: [id])
   restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
-  zone           Zone       @relation(fields: [zoneId], references: [id])
+  zone           Zone?       @relation(fields: [zoneId], references: [id])
+
+  startedSessions DiningSession[] @relation("SessionStartedBy")
+  closedSessions DiningSession[] @relation("SessionClosedBy")
+
+  createdOrders Order[] @relation("OrderCreatedBy")
+  cashierPayments Payment[] @relation("PaymentCashier")
+  reservations Reservation[]
 }
 
 model Table {
@@ -139,25 +148,46 @@ model Table {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   order        Order[]
-  payment      Payment[]
   branch       Branch         @relation(fields: [branchId], references: [id])
   zone         Zone           @relation(fields: [zoneId], references: [id])
-  tableSession tableSession[]
+  diningSessions DiningSession[]
+  reservations Reservation[]
 
   @@unique([branchId, tableNumber])
 }
 
-model tableSession {
+model DiningSession {
   id            String    @id @default(cuid())
   tableId       String
-  sessionStatus Boolean
-  startAt       DateTime  @default(now())
-  endAt         DateTime?
+  packageId     String?
+  package       Package? @relation(fields:[packageId], references:[id])
+
+  reservationId String? @unique
+  reservation Reservation? @relation("ReservationSession", fields: [reservationId], references: [id])
+
+  status        DiningStatus @default(seated)
+  guestCount    Int
+
+  startedAt DateTime @default(now())
+  closedAt DateTime?
+  finishedAt DateTime?
+
+  startedById String
+  closedById String?
+
+  bill       Bill?
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   orders        Order[]
-  payments      Payment[]
+  
   table         Table     @relation(fields: [tableId], references: [id])
+  startedBy Staff @relation( "SessionStartedBy",fields:[startedById], references:[id])
+
+  closedBy Staff? @relation("SessionClosedBy",fields:[closedById], references:[id])
+
+  @@index([tableId])
+  @@index([status])
 }
 
 model Menu {
@@ -188,7 +218,6 @@ model MenuItem {
   description String?
 
   status      menuStatus @default(available)
-
   imageUrl    String?
   imageId     String?
 
@@ -202,25 +231,32 @@ model MenuItem {
   packageItems PackageMenuItem[]
 }
 
+
 model Order {
   id          String        @id @default(cuid())
   branchId    String
   tableId     String?
-  sessionId   String?
+  diningSessionId   String?
+
+  createdById String?
+  createdBy Staff? @relation("OrderCreatedBy", fields: [createdById], references: [id])
+
   status      OrderStatus   @default(pending)
   totalAmount Decimal       @default(0)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   branch      Branch        @relation(fields: [branchId], references: [id])
-  session     tableSession? @relation(fields: [sessionId], references: [id])
+  diningSession DiningSession?  @relation(fields: [diningSessionId], references: [id])
   table       Table?        @relation(fields: [tableId], references: [id])
   items       OrderItem[]
+  @@index([diningSessionId])
 }
 
 model OrderItem {
   id         String   @id @default(cuid())
   orderId    String
   menuItemId String
+  note        String?
   quantity   Int
   price      Decimal
   createdAt  DateTime @default(now())
@@ -239,18 +275,89 @@ model PaymentMethod {
   branch    Branch    @relation(fields: [branchId], references: [id])
 }
 
+model Bill {
+  id  String @id @default(cuid())
+  sessionId  String  @unique
+
+  diningSession DiningSession @relation(fields:[sessionId], references:[id])
+
+  subtotal Decimal
+  discount Decimal @default(0)
+  serviceCharge Decimal @default(0)
+  tax Decimal @default(0)
+
+  grandTotal Decimal
+  status BillStatus
+
+  receiptNumber String @unique
+
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  paidAt DateTime?
+}
+
 model Payment {
-  id            String         @id @default(cuid())
-  tableId       String
-  sessionId     String
-  amount        Decimal
-  status        PaymentStatus  @default(pending)
-  methodId      String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  paymentmethod PaymentMethod? @relation(fields: [methodId], references: [id])
-  session       tableSession   @relation(fields: [sessionId], references: [id])
-  table         Table          @relation(fields: [tableId], references: [id])
+  id              String   @id @default(cuid())
+
+  billId          String
+  bill            Bill @relation(fields: [billId], references: [id])
+
+  paymentMethodId String
+  paymentMethod   PaymentMethod @relation(fields: [paymentMethodId], references: [id])
+
+  amount          Decimal
+
+  paidAt          DateTime @default(now())
+  status          PaymentStatus @default(pending)
+  referenceNo String?
+
+  cashierId String?
+  cashier Staff? @relation("PaymentCashier", fields: [cashierId], references: [id])
+  @@index([billId])
+}
+
+model Reservation {
+  id             String @id @default(cuid())
+  tableId        String?
+  branchId       String
+
+  customerName   String
+  customerPhone  String
+  customerEmail  String?
+
+  guestCount     Int
+
+  reservedAt     DateTime   
+  seatedAt DateTime?      
+
+  status         ReservationStatus @default(pending)
+
+  note           String?
+
+  createdById    String?     
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  diningSession DiningSession? @relation("ReservationSession")
+
+  table          Table? @relation(fields: [tableId], references: [id])
+  createdBy      Staff? @relation(fields: [createdById], references: [id])
+  branch        Branch  @relation(fields: [branchId], references: [id])
+
+  @@index([branchId, reservedAt])
+  @@index([tableId, reservedAt])
+  @@index([status])
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  arrived
+  seated
+  completed
+  cancelled
+  noShow
 }
 
 enum OrderStatus {
@@ -271,15 +378,34 @@ enum StaffRole {
 }
 
 enum TableStatus {
-  available
-  occupied
-  reserved
+
+available
+
+reserved
+
+occupied
+
+cleaning
+
+maintenance
+
+}
+
+enum BillStatus {
+    unpaid
+    partiallyPaid
+    paid
+    refunded
+    void
 }
 
 enum PaymentStatus {
   pending
+
   paid
+
   failed
+
   refunded
 }
 
@@ -294,4 +420,14 @@ enum subscriptionPlan {
 enum menuStatus {
   available
   soldOut
+}
+
+enum DiningStatus {
+  seated
+  ordering
+  dining
+  finishedEating
+  paying
+  completed
+  cancelled
 }
