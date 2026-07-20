@@ -8,12 +8,18 @@ import type { StaffPackage, Reservation } from "@/app/types/staff";
 type Tab = "start" | "reserve";
 
 interface Props {
+  packages?: StaffPackage[];
   tableId: string;
   onStart: (pkg: StaffPackage, guestCount: number) => void;
   onReserve: (reservation: Reservation) => void;
 }
 
-export default function AvailableTablePanel({ tableId, onStart, onReserve }: Props) {
+export default function AvailableTablePanel({
+  packages,
+  tableId,
+  onStart,
+  onReserve,
+}: Props) {
   const [tab, setTab] = useState<Tab>("start");
 
   return (
@@ -21,16 +27,20 @@ export default function AvailableTablePanel({ tableId, onStart, onReserve }: Pro
       <div className="flex rounded-xl border border-black/10 overflow-hidden bg-white mb-3">
         <button
           onClick={() => setTab("start")}
-          className={`flex-1 py-2 text-[12px] font-medium ${
-            tab === "start" ? "bg-cream-dark text-text-primary" : "text-text-muted"
+          className={`flex-1 py-2 text-[12px] font-medium transition-all ${
+            tab === "start"
+              ? "text-text-muted"
+              : " bg-cream-dark text-text-primary"
           }`}
         >
           Start session
         </button>
         <button
           onClick={() => setTab("reserve")}
-          className={`flex-1 py-2 text-[12px] font-medium ${
-            tab === "reserve" ? "bg-cream-dark text-text-primary" : "text-text-muted"
+          className={`flex-1 py-2 text-[12px] font-medium transition-all  ${
+            tab === "reserve"
+              ? "text-text-muted"
+              : " bg-cream-dark text-text-primary"
           }`}
         >
           Reserve for later
@@ -38,7 +48,11 @@ export default function AvailableTablePanel({ tableId, onStart, onReserve }: Pro
       </div>
 
       {tab === "start" ? (
-        <StartSessionPanel tableId={tableId} onStart={onStart} />
+        <StartSessionPanel
+          tableId={tableId}
+          onStart={onStart}
+          packages={packages}
+        />
       ) : (
         <ReservePanel tableId={tableId} onReserve={onReserve} />
       )}
