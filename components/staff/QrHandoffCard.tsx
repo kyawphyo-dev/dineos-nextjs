@@ -21,17 +21,15 @@ export default function QrHandoffCard({ table, onCloseSession }: Props) {
       <div className="w-40 h-40 mx-auto mb-4 bg-cream-dark rounded-xl flex items-center justify-center">
         <QrCode className="w-16 h-16 text-text-hint" strokeWidth={1.25} />
       </div>
-      <p className="text-[14px] font-medium text-text-primary mb-3">Scan to view menu</p>
+      <p className="text-[14px] font-medium text-text-primary mb-3">
+        Scan to view menu
+      </p>
 
       <div className="flex flex-col text-left">
         <Row label="Table" value={table.id} />
         <Row label="StaffPackage" value={session?.packageName ?? "—"} />
         <Row label="Guests" value={String(session?.guestCount ?? "—")} />
-        <Row
-          label="Status"
-          value="Session active"
-          valueClassName="text-sage"
-        />
+        <Row label="Status" value="Session active" valueClassName="text-sage" />
       </div>
 
       {onCloseSession && (
@@ -58,7 +56,9 @@ function Row({
   return (
     <div className="flex justify-between text-[13px] py-2 border-b border-black/6 last:border-b-0">
       <span className="text-text-muted">{label}</span>
-      <span className={`font-medium text-text-primary ${valueClassName ?? ""}`}>{value}</span>
+      <span className={`font-medium text-text-primary ${valueClassName ?? ""}`}>
+        {value}
+      </span>
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Users } from "lucide-react";
 import UserMenu from "@/components/shared/UserMenu";
 import TableCard from "@/components/staff/TableCard";
-import StatusLegend from "@/components/staff/StatusLegend";
 import AvailableTablePanel from "@/components/staff/AvailableTablePanel";
 import QrHandoffCard from "@/components/staff/QrHandoffCard";
 import ReservationCard from "@/components/staff/ReservationCard";
@@ -23,14 +22,18 @@ interface BranchWithRestaurant extends Branch {
 interface Props {
   tables: TableWithZone[];
   branch?: BranchWithRestaurant;
+  packages?: StaffPackage[];
 }
 
 interface GroupedTables {
   [zoneName: string]: FrontTable[];
 }
 
-export default function StaffDashboard({ tables: realTables, branch }: Props) {
-  // Convert real Table data to FrontTable format and group by zone
+export default function StaffDashboard({
+  tables: realTables,
+  branch,
+  packages,
+}: Props) {
   const groupedTables: GroupedTables = realTables.reduce((acc, table) => {
     const zoneName = table.zone?.name || "Unassigned";
     const frontTable: FrontTable = {
@@ -47,7 +50,6 @@ export default function StaffDashboard({ tables: realTables, branch }: Props) {
     return acc;
   }, {} as GroupedTables);
 
-  // Flatten for selected table lookup and active count
   const allTables: FrontTable[] = Object.values(groupedTables).flat();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -56,7 +58,6 @@ export default function StaffDashboard({ tables: realTables, branch }: Props) {
     ? allTables.find((t) => t.id === selectedId)
     : undefined;
 
-  // Placeholder handlers (will be implemented later)
   const handleStart = (pkg: StaffPackage, guestCount: number) => {
     console.log("Start session (placeholder)", { selectedId, pkg, guestCount });
   };
@@ -79,9 +80,10 @@ export default function StaffDashboard({ tables: realTables, branch }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-cream-dark">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 relative">
-        <div className="flex items-center justify-between mb-1">
+    <div className="min-h-screen bg-cream-dark relative">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-6">
+        {/* Desktop layout (sm and up) */}
+        <div className="hidden sm:flex items-center justify-between mb-1">
           <div>
             <h1 className="text-[18px] font-medium text-text-primary">
               Tables
@@ -90,20 +92,40 @@ export default function StaffDashboard({ tables: realTables, branch }: Props) {
               {branch?.restaurant?.name || ""} . {branch?.name || ""}
             </p>
           </div>
-          <div className="flex items-center gap-1.5 text-[12px] text-text-muted">
-            <Users className="w-3.5 h-3.5" />
-            {
-              allTables.filter(
-                (t) => t.status === "occupied" || t.status === "attention",
-              ).length
-            }{" "}
-            active
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-[12px] text-text-muted">
+              <Users className="w-3.5 h-3.5" />
+              {
+                allTables.filter(
+                  (t) => t.status === "occupied" || t.status === "attention",
+                ).length
+              }{" "}
+              active
+            </div>
+            <UserMenu />
           </div>
-          <UserMenu />
         </div>
-
-        <div className="mt-4 mb-5">
-          <StatusLegend />
+        {/* Mobile layout */}
+        <div className="flex flex-col sm:hidden gap-3">
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h1 className="text-[18px] font-medium text-text-primary">
+                Tables
+              </h1>
+              <p className="text-[12px] text-text-muted mt-0.5">
+                {branch?.restaurant?.name || ""} . {branch?.name || ""}
+              </p>
+            </div>
+            <div className="flex items-center gap-1.5 text-[12px] text-text-muted">
+              <Users className="w-3.5 h-3.5" />
+              {
+                allTables.filter(
+                  (t) => t.status === "occupied" || t.status === "attention",
+                ).length
+              }{" "}
+              active
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6 lg:max-w-[calc(100%-360px-1.5rem)]">
@@ -134,7 +156,7 @@ export default function StaffDashboard({ tables: realTables, branch }: Props) {
             />
 
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="bg-cream-dark w-[400px] max-w-md rounded-2xl border border-black/8 p-4 max-h-[80vh] overflow-y-auto">
+              <div className="bg-cream-dark w-100 max-w-md rounded-2xl border border-black/8 p-4 max-h-[80vh] overflow-y-auto">
                 <div className="flex justify-between items-center mb-4">
                   <span className="text-[13px] font-medium text-text-muted">
                     Table {selectedTable.id}
@@ -173,6 +195,7 @@ export default function StaffDashboard({ tables: realTables, branch }: Props) {
                   />
                 ) : (
                   <AvailableTablePanel
+                    packages={packages}
                     tableId={selectedTable.id}
                     onStart={handleStart}
                     onReserve={handleReserve}
@@ -182,6 +205,11 @@ export default function StaffDashboard({ tables: realTables, branch }: Props) {
             </div>
           </>
         )}
+
+        <div className="fixed bottom-0 right-0 sm:hidden bg-cream-dark px-4 py-3 z-40">
+          <UserMenu />
+        </div>
+        <div className="sm:hidden h-20" />
       </div>
     </div>
   );

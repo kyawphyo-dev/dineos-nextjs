@@ -12,12 +12,19 @@ const PACKAGE_ICONS: Record<string, typeof Soup> = {
 };
 
 interface Props {
+  packages?: StaffPackage[];
   tableId: string;
   onStart: (pkg: StaffPackage, guestCount: number) => void;
 }
 
-export default function StartSessionPanel({ tableId, onStart }: Props) {
-  const [selectedPkg, setSelectedPkg] = useState<StaffPackage>(STAFF_PACKAGES[0]);
+export default function StartSessionPanel({
+  packages,
+  tableId,
+  onStart,
+}: Props) {
+  const [selectedPkg, setSelectedPkg] = useState<StaffPackage | undefined>(
+    packages?.[0],
+  );
   const [guestCount, setGuestCount] = useState(2);
 
   return (
@@ -28,27 +35,31 @@ export default function StartSessionPanel({ tableId, onStart }: Props) {
 
       <p className="text-[12px] text-text-muted mb-2">Choose package</p>
       <div className="flex flex-col gap-2 mb-5">
-        {STAFF_PACKAGES.map((pkg) => {
+        {packages?.map((pkg) => {
           const Icon = PACKAGE_ICONS[pkg.icon] ?? Soup;
           return (
-          <button
-            key={pkg.id}
-            onClick={() => setSelectedPkg(pkg)}
-            className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
-              selectedPkg.id === pkg.id ? "border-clay border-2" : "border-black/10"
-            }`}
-          >
-            <div className="w-9 h-9 rounded-lg bg-clay-light flex items-center justify-center flex-shrink-0">
-              <Icon className="w-4 h-4 text-clay-dark" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-medium text-text-primary">{pkg.name}</p>
-              <p className="text-[11px] text-text-muted">{pkg.description}</p>
-            </div>
-            <p className="text-[13px] font-medium text-clay-dark whitespace-nowrap">
-              ฿{pkg.price} / person
-            </p>
-          </button>
+            <button
+              key={pkg.id}
+              onClick={() => setSelectedPkg(pkg)}
+              className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+                selectedPkg.id === pkg.id
+                  ? "border-clay border-2"
+                  : "border-black/10"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-lg bg-clay-light flex items-center justify-center flex-shrink-0">
+                <Icon className="w-4 h-4 text-clay-dark" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-text-primary">
+                  {pkg.name}
+                </p>
+                <p className="text-[11px] text-text-muted">{pkg.description}</p>
+              </div>
+              <p className="text-[13px] font-medium text-clay-dark whitespace-nowrap">
+                ฿{pkg.price} / person
+              </p>
+            </button>
           );
         })}
       </div>
