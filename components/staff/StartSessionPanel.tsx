@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Minus, Plus, QrCode, Soup, Utensils } from "lucide-react";
 import { motion } from "framer-motion";
-import { STAFF_PACKAGES } from "@/app/data/staff-mock";
 import type { StaffPackage } from "@/app/types/staff";
 
 const PACKAGE_ICONS: Record<string, typeof Soup> = {
@@ -14,7 +13,7 @@ const PACKAGE_ICONS: Record<string, typeof Soup> = {
 interface Props {
   packages?: StaffPackage[];
   tableId: string;
-  onStart: (pkg: StaffPackage, guestCount: number) => void;
+  onStart: (pkg: StaffPackage, guestCount: number, tableId: string) => void;
 }
 
 export default function StartSessionPanel({
@@ -42,7 +41,7 @@ export default function StartSessionPanel({
               key={pkg.id}
               onClick={() => setSelectedPkg(pkg)}
               className={`flex items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
-                selectedPkg.id === pkg.id
+                selectedPkg?.id === pkg.id
                   ? "border-clay border-2"
                   : "border-black/10"
               }`}
@@ -87,8 +86,13 @@ export default function StartSessionPanel({
 
       <motion.button
         whileTap={{ scale: 0.98 }}
-        onClick={() => onStart(selectedPkg, guestCount)}
+        onClick={() => {
+          if (selectedPkg) {
+            onStart(selectedPkg, guestCount, tableId);
+          }
+        }}
         className="w-full bg-clay text-white rounded-xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors"
+        disabled={!selectedPkg}
       >
         <QrCode className="w-4 h-4" />
         Start session &amp; show QR

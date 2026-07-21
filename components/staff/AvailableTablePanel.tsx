@@ -10,7 +10,7 @@ type Tab = "start" | "reserve";
 interface Props {
   packages?: StaffPackage[];
   tableId: string;
-  onStart: (pkg: StaffPackage, guestCount: number) => void;
+  onStart: (pkg: StaffPackage, guestCount: number, tableId: string) => void;
   onReserve: (reservation: Reservation) => void;
 }
 

@@ -10,6 +10,8 @@ import ReservationCard from "@/components/staff/ReservationCard";
 import type { FrontTable, StaffPackage, Reservation } from "@/app/types/staff";
 import type { Restaurant, Table } from "@/app/types/restaurant";
 import { Branch } from "@prisma/client";
+import StartDiningSession from "@/lib/actions/staff/StartDiningSession.action";
+import StatusLegend from "./StatusLegend";
 
 interface TableWithZone extends Table {
   zone?: { id?: string; name?: string; branchId?: string };
@@ -58,8 +60,27 @@ export default function StaffDashboard({
     ? allTables.find((t) => t.id === selectedId)
     : undefined;
 
-  const handleStart = (pkg: StaffPackage, guestCount: number) => {
-    console.log("Start session (placeholder)", { selectedId, pkg, guestCount });
+  const handleStart = async (
+    pkg: StaffPackage,
+    guestCount: number,
+    tableId: string,
+  ) => {
+    if (!branch?.id) return;
+
+    const result = await StartDiningSession({
+      tableNumber: tableId,
+      packageId: pkg.id,
+      guestCount,
+      branchId: branch.id,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      // Optionally refresh the page or update state here
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to start session");
+    }
   };
 
   const handleClose = () => {
@@ -129,6 +150,7 @@ export default function StaffDashboard({
         </div>
 
         <div className="space-y-6 lg:max-w-[calc(100%-360px-1.5rem)]">
+          <StatusLegend />
           {Object.entries(groupedTables).map(([zoneName, tables]) => (
             <div key={zoneName}>
               <h2 className="text-[14px] font-semibold text-text-secondary mb-3">
