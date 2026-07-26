@@ -6,11 +6,22 @@ import type { FrontTable } from "@/app/types/staff";
 
 interface Props {
   table: FrontTable;
-  onCloseSession?: () => void;
+  onCloseSession?: (sessionId: string, tableNumber: string) => void;
 }
 
 export default function QrHandoffCard({ table, onCloseSession }: Props) {
   const session = table.session;
+
+  // Format startedAt to readable date/time
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   return (
     <motion.div
@@ -27,14 +38,16 @@ export default function QrHandoffCard({ table, onCloseSession }: Props) {
 
       <div className="flex flex-col text-left">
         <Row label="Table" value={table.id} />
-        <Row label="StaffPackage" value={session?.packageName ?? "—"} />
+        <Row label="Package" value={session?.packageName ?? "—"} />
         <Row label="Guests" value={String(session?.guestCount ?? "—")} />
+        <Row label="Started at" value={session?.startedAt ? formatDate(session.startedAt) : "—"} />
+        {session?.startedBy && <Row label="Started by" value={session.startedBy} />}
         <Row label="Status" value="Session active" valueClassName="text-sage" />
       </div>
 
-      {onCloseSession && (
+      {onCloseSession && session && (
         <button
-          onClick={onCloseSession}
+          onClick={() => onCloseSession(session.id, table.id)}
           className="w-full mt-4 border border-black/12 text-text-muted rounded-xl py-2.5 text-[13px] font-medium"
         >
           Close session

@@ -28,7 +28,6 @@ async function StartDiningSession(params: StartDiningSessionParams) {
     }
     const { id: staffId } = session.user as authenticatedUser;
 
-    // Find the table by tableNumber and branchId
     const table = await prisma.table.findUnique({
       where: {
         branchId_tableNumber: {
@@ -42,9 +41,7 @@ async function StartDiningSession(params: StartDiningSessionParams) {
       throw new Error("Table not found");
     }
 
-    // Create the dining session and update table status in a transaction
     const result = await prisma.$transaction(async (tx) => {
-      // Update table status to occupied
       const updatedTable = await tx.table.update({
         where: { id: table.id },
         data: { status: "occupied" },

@@ -11,10 +11,19 @@ import type { FrontTable, StaffPackage, Reservation } from "@/app/types/staff";
 import type { Restaurant, Table } from "@/app/types/restaurant";
 import { Branch } from "@prisma/client";
 import StartDiningSession from "@/lib/actions/staff/StartDiningSession.action";
+import CloseDiningSession from "@/lib/actions/staff/CloseDiningSession.action";
 import StatusLegend from "./StatusLegend";
 
 interface TableWithZone extends Table {
   zone?: { id?: string; name?: string; branchId?: string };
+  diningSessions?: Array<{
+    id: string;
+    packageId?: string | null;
+    package?: { id: string; name: string } | null;
+    guestCount: number;
+    startedAt: string;
+    startedBy?: { name: string } | null;
+  }>;
 }
 
 interface BranchWithRestaurant extends Branch {
@@ -38,11 +47,22 @@ export default function StaffDashboard({
 }: Props) {
   const groupedTables: GroupedTables = realTables.reduce((acc, table) => {
     const zoneName = table.zone?.name || "Unassigned";
+    const diningSession = table.diningSessions?.[0];
     const frontTable: FrontTable = {
       id: table.tableNumber,
       seats: table.capacity,
       status: (table.status as FrontTable["status"]) || "available",
       meta: `${table.capacity} seats`,
+      session: diningSession
+        ? {
+            id: diningSession.id,
+            packageId: diningSession.packageId ?? undefined,
+            packageName: diningSession.package?.name ?? undefined,
+            guestCount: diningSession.guestCount,
+            startedAt: diningSession.startedAt,
+            startedBy: diningSession.startedBy?.name ?? undefined,
+          }
+        : undefined,
     };
 
     if (!acc[zoneName]) {
@@ -83,9 +103,22 @@ export default function StaffDashboard({
     }
   };
 
-  const handleClose = () => {
-    console.log("Close session (placeholder)", { selectedId });
-    setSelectedId(null);
+  const handleClose = async (sessionId: string, tableNumber: string) => {
+    if (!branch?.id) return;
+
+    const result = await CloseDiningSession({
+      sessionId,
+      tableNumber,
+      branchId: branch.id,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      // Refresh the page to get updated data
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to close session");
+    }
   };
 
   const handleReserve = (reservation: Reservation) => {
