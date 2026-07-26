@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Plus,
   Trash2,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageHeader from "@/components/admin/PageHeader";
+import SearchBar from "@/components/shared/SearchBar";
 import { toast } from "sonner";
 import AddPackage from "@/lib/actions/CreatePackage.action";
 import DeletePackage from "@/lib/actions/DeletePackage.action";
@@ -28,6 +29,7 @@ type Props = {
 };
 
 function PackagesDashboard({ packages, menus, branchId }: Props) {
+  const [search, setSearch] = useState("");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -42,6 +44,19 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const filteredPackages = useMemo(() => {
+    if (!search.trim()) return packages;
+    const q = search.toLowerCase();
+    return packages.filter(
+      (pkg) =>
+        pkg.name.toLowerCase().includes(q) ||
+        pkg.description.toLowerCase().includes(q) ||
+        (pkg.packageItems || []).some((pi) =>
+          pi.menuItem.name.toLowerCase().includes(q),
+        ),
+    );
+  }, [packages, search]);
 
   // Flatten menus for easier access
   const flatMenuItems = menus.flatMap((menu) =>
@@ -203,6 +218,15 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
       <PageHeader
         title="Packages"
         subtitle={`${packages.length} dining packages`}
+        center={
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search packages, items..."
+            resultCount={filteredPackages.length}
+            totalCount={packages.length}
+          />
+        }
         action={
           <button
             onClick={() => setIsCreateModalOpen(true)}
@@ -215,7 +239,7 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {packages.map((pkg) => (
+        {filteredPackages.map((pkg) => (
           <div
             key={pkg.id}
             className="bg-white rounded-2xl border border-black/8 p-4 flex items-start gap-3"
@@ -269,7 +293,17 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
         ))}
       </div>
 
-      {packages.length === 0 && (
+      {filteredPackages.length === 0 && search.trim() && (
+        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+          <PackageIcon size={36} className="mx-auto text-gray-400 mb-3" />
+          <h3 className="font-medium text-gray-700">No matching packages</h3>
+          <p className="text-sm text-gray-500 mt-1">
+            Try a different search term.
+          </p>
+        </div>
+      )}
+
+      {packages.length === 0 && !search.trim() && (
         <p className="text-center text-text-hint text-[13px] py-10">
           No packages yet.
         </p>

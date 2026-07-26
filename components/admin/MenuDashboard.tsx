@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { NotebookText, Plus, Trash2, Edit, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Menu } from "@/app/types/admin";
 import PageHeader from "@/components/admin/PageHeader";
+import SearchBar from "@/components/shared/SearchBar";
 import ConfirmDelete from "@/components/shared/ConfirmDelete";
 import CreateMenu from "@/lib/actions/CreateMenu.action";
 import { UpdateMenu } from "@/lib/actions/UpdateMenu.action";
@@ -20,9 +21,24 @@ type Props = {
 function MenuDashboard({ menuList, branchId }: Props) {
   const router = useRouter();
 
+  const [search, setSearch] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [editingMenu, setEditingMenu] = useState<Menu | null>(null);
+
+  const filteredMenuList = useMemo(() => {
+    if (!search.trim()) return menuList;
+    const q = search.toLowerCase();
+    return menuList.filter(
+      (menu) =>
+        menu.name.toLowerCase().includes(q) ||
+        (menu.categories || []).some(
+          (cat) =>
+            cat.name.toLowerCase().includes(q) ||
+            (cat.description || "").toLowerCase().includes(q),
+        ),
+    );
+  }, [menuList, search]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -98,14 +114,21 @@ function MenuDashboard({ menuList, branchId }: Props) {
 
   return (
     <div>
-      <form onSubmit={handleSubmit}>
-        <PageHeader
-          title="Menu"
-          subtitle={`${menuList.length} menu${
-            menuList.length !== 1 ? "s" : ""
-          }`}
-        />
+      <PageHeader
+        title="Menu"
+        subtitle={`${menuList.length} menu${menuList.length !== 1 ? "s" : ""}`}
+        center={
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search menus or categories..."
+            resultCount={filteredMenuList.length}
+            totalCount={menuList.length}
+          />
+        }
+      />
 
+      <form onSubmit={handleSubmit}>
         <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4 w-3/4">
           {editingMenu && (
             <div className="mb-4 flex items-center gap-2 px-3 py-2 bg-clay-light rounded-xl">
@@ -162,8 +185,8 @@ function MenuDashboard({ menuList, branchId }: Props) {
       </form>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {menuList.length > 0 ? (
-          menuList.map((menu) => (
+        {filteredMenuList.length > 0 ? (
+          filteredMenuList.map((menu) => (
             <motion.div
               key={menu.id}
               whileHover={{ y: -2 }}
@@ -210,12 +233,18 @@ function MenuDashboard({ menuList, branchId }: Props) {
               </p>
             </motion.div>
           ))
+        ) : search.trim() ? (
+          <div className="col-span-full bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+            <NotebookText size={36} className="mx-auto text-gray-400 mb-3" />
+            <h3 className="font-medium text-gray-700">No matching menus</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Try a different search term.
+            </p>
+          </div>
         ) : (
           <div className="col-span-full bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
             <NotebookText size={36} className="mx-auto text-gray-400 mb-3" />
-
             <h3 className="font-medium text-gray-700">No menus yet</h3>
-
             <p className="text-sm text-gray-500 mt-1">
               Create your first menu to organize categories and menu items.
             </p>

@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Trash2, Upload, X, Edit, XCircle } from "lucide-react";
 import PageHeader from "@/components/admin/PageHeader";
+import SearchBar from "@/components/shared/SearchBar";
 import { Menu as MenuType, MenuItem as MenuItemType } from "@/app/types/admin";
 import { CreateMenuItem } from "@/lib/actions/CreateMenuItem.action";
 import { UpdateMenuItem } from "@/lib/actions/UpdateMenuItem.action";
@@ -13,6 +14,7 @@ type Props = {
   menus?: MenuType[];
 };
 function MenuItemsDashboard({ menus = [] }: Props) {
+  const [search, setSearch] = useState("");
   const [editingItem, setEditingItem] = useState<MenuItemType | null>(null);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
@@ -37,6 +39,33 @@ function MenuItemsDashboard({ menus = [] }: Props) {
       }, 0)
     );
   }, 0);
+
+  const { filteredMenus, filteredItemCount } = useMemo(() => {
+    if (!search.trim()) {
+      return { filteredMenus: menus, filteredItemCount: totalItems };
+    }
+    const q = search.toLowerCase();
+    let count = 0;
+    const filtered = menus
+      .map((menu) => {
+        const categories = (menu.categories || [])
+          .map((cat) => {
+            const items = (cat.items || []).filter(
+              (item) =>
+                item.name.toLowerCase().includes(q) ||
+                (item.description || "").toLowerCase().includes(q) ||
+                cat.name.toLowerCase().includes(q) ||
+                menu.name.toLowerCase().includes(q),
+            );
+            count += items.length;
+            return { ...cat, items };
+          })
+          .filter((cat) => cat.items && cat.items.length > 0);
+        return { ...menu, categories };
+      })
+      .filter((menu) => menu.categories && menu.categories.length > 0);
+    return { filteredMenus: filtered, filteredItemCount: count };
+  }, [menus, search, totalItems]);
 
   const handleEdit = (item: MenuItemType) => {
     setEditingItem(item);
@@ -147,6 +176,15 @@ function MenuItemsDashboard({ menus = [] }: Props) {
       <PageHeader
         title="Menu Items"
         subtitle={`${totalItems} items across ${allCategories.length} categories`}
+        center={
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search items, categories, menus..."
+            resultCount={filteredItemCount}
+            totalCount={totalItems}
+          />
+        }
       />
 
       <div className="bg-white rounded-2xl border border-black/8 p-4 mb-4">
@@ -262,7 +300,7 @@ function MenuItemsDashboard({ menus = [] }: Props) {
       </div>
 
       <div className="space-y-8">
-        {menus.map((menu) => {
+        {filteredMenus.map((menu) => {
           const menuItemCount = (menu.categories || []).reduce((sum, cat) => {
             return sum + (cat.items || []).length;
           }, 0);
@@ -289,7 +327,6 @@ function MenuItemsDashboard({ menus = [] }: Props) {
                               key={item.id}
                               className="bg-white rounded-2xl border border-black/8 overflow-hidden flex flex-col"
                             >
-                              {/* Image */}
                               <div className="aspect-video bg-gray-100">
                                 {item.imageUrl ? (
                                   <img
@@ -303,7 +340,6 @@ function MenuItemsDashboard({ menus = [] }: Props) {
                                   </div>
                                 )}
                               </div>
-                              {/* Content */}
                               <div className="p-4 flex-1 flex flex-col">
                                 <div className="flex items-start justify-between mb-2">
                                   <h4 className="text-[15px] font-semibold text-text-primary">
@@ -366,7 +402,17 @@ function MenuItemsDashboard({ menus = [] }: Props) {
           );
         })}
 
-        {totalItems === 0 && (
+        {filteredItemCount === 0 && search.trim() && (
+          <div className="col-span-full bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+            <Upload size={36} className="mx-auto text-gray-400 mb-3" />
+            <h3 className="font-medium text-gray-700">No matching items</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Try a different search term.
+            </p>
+          </div>
+        )}
+
+        {totalItems === 0 && !search.trim() && (
           <div className="col-span-full bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
             <Upload size={36} className="mx-auto text-gray-400 mb-3" />
             <h3 className="font-medium text-gray-700">No menu items yet</h3>

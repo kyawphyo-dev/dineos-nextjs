@@ -1,7 +1,8 @@
 "use client";
 import PageHeader from "@/components/admin/PageHeader";
 import ConfirmDelete from "@/components/shared/ConfirmDelete";
-import { useState } from "react";
+import SearchBar from "@/components/shared/SearchBar";
+import { useState, useMemo } from "react";
 import { Plus, Trash2, Tag, BookOpen, Edit, XCircle } from "lucide-react";
 import { Menu, Category as CategoryType } from "@/app/types/admin";
 import { useRouter } from "next/navigation";
@@ -18,6 +19,7 @@ function CategoriesDashboard({
 }) {
   const router = useRouter();
   const [menuList, setMenuList] = useState(initialMenuList);
+  const [search, setSearch] = useState("");
   const [form, setForm] = useState({
     name: "",
     menuId: "",
@@ -30,6 +32,47 @@ function CategoriesDashboard({
     description?: string | null;
   } | null>(null);
   const [error, setError] = useState("");
+
+  const totalCategories = useMemo(() => {
+    return menuList.reduce(
+      (sum, menu) => sum + (menu.categories?.length || 0),
+      0,
+    );
+  }, [menuList]);
+
+  const { filteredMenuList, filteredCategoryCount } = useMemo(() => {
+    if (!search.trim()) {
+      return {
+        filteredMenuList: menuList,
+        filteredCategoryCount: totalCategories,
+      };
+    }
+    const q = search.toLowerCase();
+    let count = 0;
+    const filtered = menuList
+      .map((menu) => {
+        const menuMatches = menu.name.toLowerCase().includes(q);
+        const categories = (menu.categories || []).filter((cat) => {
+          const catMatches =
+            cat.name.toLowerCase().includes(q) ||
+            (cat.description || "").toLowerCase().includes(q) ||
+            menuMatches;
+          if (catMatches) count++;
+          return catMatches;
+        });
+        if (menuMatches && categories.length === 0) {
+          count += menu.categories?.length || 0;
+          return { ...menu, categories: menu.categories };
+        }
+        return { ...menu, categories };
+      })
+      .filter(
+        (menu) =>
+          menu.name.toLowerCase().includes(q) ||
+          (menu.categories && menu.categories.length > 0),
+      );
+    return { filteredMenuList: filtered, filteredCategoryCount: count };
+  }, [menuList, search, totalCategories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,8 +202,18 @@ function CategoriesDashboard({
     <div>
       <PageHeader
         title="Categories & Menus"
-        subtitle={`${menuList.length} menus`}
+        subtitle={`${menuList.length} menus · ${totalCategories} categories`}
+        center={
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            placeholder="Search menus, categories..."
+            resultCount={filteredCategoryCount}
+            totalCount={totalCategories}
+          />
+        }
       />
+
       <div className="flex items-center text-center justify-center mb-5">
         {error && (
           <div className="w-1/2 bg-rose-light text-rose text-[12px] rounded-xl px-3.5 py-2.5">
@@ -238,7 +291,7 @@ function CategoriesDashboard({
       </div>
 
       <div className="space-y-6">
-        {menuList.map((menu) => (
+        {filteredMenuList.map((menu) => (
           <div
             key={menu.id}
             className=" rounded-2xl border border-black/8 overflow-hidden"
@@ -363,7 +416,18 @@ function CategoriesDashboard({
             )}
           </div>
         ))}
-        {menuList.length === 0 && (
+        {filteredMenuList.length === 0 && search.trim() && (
+          <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
+            <BookOpen size={36} className="mx-auto text-gray-400 mb-3" />
+            <h3 className="font-medium text-gray-700">
+              No matching menus or categories
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Try a different search term.
+            </p>
+          </div>
+        )}
+        {menuList.length === 0 && !search.trim() && (
           <div className="bg-white rounded-2xl border border-black/8 p-6 text-center">
             <p className="text-[13px] text-text-hint">No menus found.</p>
           </div>
