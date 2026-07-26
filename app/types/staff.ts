@@ -11,10 +11,12 @@ export type StaffPackage = {
 };
 
 export type TableSession = {
-  packageId: string;
-  packageName: string;
+  id: string;
+  packageId?: string;
+  packageName?: string;
   guestCount: number;
   startedAt: string;
+  startedBy?: string;
 };
 
 export type Reservation = {

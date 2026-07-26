@@ -19,7 +19,28 @@ export async function getStaffTables() {
   try {
     const tables = await prisma.table.findMany({
       where: { branchId },
-      include: { zone: true },
+      include: {
+        zone: true,
+        diningSessions: {
+          where: {
+            status: {
+              in: ["seated", "ordering", "dining", "finishedEating", "paying"],
+            },
+          },
+          include: {
+            package: true,
+            startedBy: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            startedAt: "desc",
+          },
+          take: 1,
+        },
+      },
     });
 
     return {
