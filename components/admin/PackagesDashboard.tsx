@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Plus,
   Trash2,
@@ -8,6 +8,7 @@ import {
   Upload,
   X,
   Edit,
+  ChevronDown,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageHeader from "@/components/admin/PageHeader";
@@ -16,11 +17,7 @@ import { toast } from "sonner";
 import AddPackage from "@/lib/actions/CreatePackage.action";
 import DeletePackage from "@/lib/actions/DeletePackage.action";
 import UpdatePackage from "@/lib/actions/UpdatePackage.action";
-import {
-  AdminPackage,
-  Menu,
-  MenuItem as AdminMenuItem,
-} from "@/app/types/admin";
+import { AdminPackage, Menu } from "@/app/types/admin";
 
 type Props = {
   packages: AdminPackage[];
@@ -44,6 +41,29 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const createDropdownRef = useRef<HTMLDivElement>(null);
+  const editDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const createRef = createDropdownRef.current;
+      const editRef = editDropdownRef.current;
+
+      const isInCreate = createRef && createRef.contains(event.target as Node);
+      const isInEdit = editRef && editRef.contains(event.target as Node);
+
+      if (!isInCreate && !isInEdit) {
+        setCategoryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const filteredPackages = useMemo(() => {
     if (!search.trim()) return packages;
@@ -57,11 +77,6 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
         ),
     );
   }, [packages, search]);
-
-  // Flatten menus for easier access
-  const flatMenuItems = menus.flatMap((menu) =>
-    (menu.categories || []).flatMap((cat) => cat.items || []),
-  );
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -88,6 +103,60 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
     );
   };
 
+  const allCategories = useMemo(() => {
+    return menus.flatMap((menu) =>
+      (menu.categories || []).map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        menuId: menu.id,
+        menuName: menu.name,
+        items: cat.items || [],
+      })),
+    );
+  }, [menus]);
+
+  const getCategoryItemIds = (categoryId: string): string[] => {
+    const category = allCategories.find((c) => c.id === categoryId);
+    if (!category) return [];
+    return category.items.map((item) => item.id);
+  };
+
+  const isCategoryAllSelected = (categoryId: string): boolean => {
+    const itemIds = getCategoryItemIds(categoryId);
+    if (itemIds.length === 0) return false;
+    return itemIds.every((id) => selectedMenuItemIds.includes(id));
+  };
+
+  const isCategoryPartiallySelected = (categoryId: string): boolean => {
+    const itemIds = getCategoryItemIds(categoryId);
+    if (itemIds.length === 0) return false;
+    const selectedCount = itemIds.filter((id) =>
+      selectedMenuItemIds.includes(id),
+    ).length;
+    return selectedCount > 0 && selectedCount < itemIds.length;
+  };
+
+  const toggleCategory = (categoryId: string) => {
+    const itemIds = getCategoryItemIds(categoryId);
+    if (itemIds.length === 0) return;
+
+    const allSelected = isCategoryAllSelected(categoryId);
+
+    setSelectedMenuItemIds((prev) => {
+      if (allSelected) {
+        return prev.filter((id) => !itemIds.includes(id));
+      } else {
+        const newIds = [...prev];
+        itemIds.forEach((id) => {
+          if (!newIds.includes(id)) {
+            newIds.push(id);
+          }
+        });
+        return newIds;
+      }
+    });
+  };
+
   const resetForm = () => {
     setName("");
     setDescription("");
@@ -100,6 +169,8 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
     setIsEditMode(false);
     setIsCreateModalOpen(false);
     setIsDetailsModalOpen(false);
+    setCategoryFilter("all");
+    setCategoryDropdownOpen(false);
   };
 
   const openDetailsModal = (pkg: AdminPackage) => {
@@ -413,53 +484,158 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
                 </div>
 
                 <div className="border-t border-black/8 pt-5">
-                  <p className="text-[11px] font-medium text-text-hint uppercase tracking-wider mb-3">
-                    Included menu items
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <p className="text-[11px] font-medium text-text-hint uppercase tracking-wider">
+                      Included menu items
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-text-muted">
+                        {selectedMenuItemIds.length} selected
+                      </span>
+                      <div className="relative" ref={createDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCategoryDropdownOpen(!categoryDropdownOpen)
+                          }
+                          className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-lg border border-black/12 text-text-muted hover:border-clay/30 transition"
+                        >
+                          {categoryFilter === "all"
+                            ? "All categories"
+                            : allCategories.find((c) => c.id === categoryFilter)
+                                ?.name || "All categories"}
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        {categoryDropdownOpen && (
+                          <div className="absolute right-0 top-full mt-1 z-10 bg-white rounded-xl border border-black/8 shadow-lg min-w-[200px] max-h-[280px] overflow-y-auto py-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCategoryFilter("all");
+                                setCategoryDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-[13px] hover:bg-clay/5 transition ${
+                                categoryFilter === "all"
+                                  ? "text-clay font-medium bg-clay/5"
+                                  : "text-text-primary"
+                              }`}
+                            >
+                              All categories
+                            </button>
+                            {allCategories.map((cat) => (
+                              <button
+                                key={cat.id}
+                                type="button"
+                                onClick={() => {
+                                  setCategoryFilter(cat.id);
+                                  setCategoryDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-[13px] hover:bg-clay/5 transition ${
+                                  categoryFilter === cat.id
+                                    ? "text-clay font-medium bg-clay/5"
+                                    : "text-text-primary"
+                                }`}
+                              >
+                                <span className="block truncate">
+                                  {cat.name}
+                                </span>
+                                <span className="block text-[11px] text-text-hint truncate">
+                                  {cat.menuName} · {cat.items.length} items
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="flex flex-col gap-4">
                     {menus.map((menu) => {
-                      const menuItems =
-                        menu.categories?.flatMap((cat) =>
-                          (cat.items || []).map((item) => ({
-                            ...item,
-                            categoryName: cat.name,
-                            menuName: menu.name,
-                          })),
-                        ) || [];
+                      const visibleCategories = (menu.categories || []).filter(
+                        (cat) =>
+                          categoryFilter === "all" || categoryFilter === cat.id,
+                      );
 
-                      if (menuItems.length === 0) return null;
+                      if (visibleCategories.length === 0) return null;
 
                       return (
-                        <div key={menu.id} className="flex flex-col gap-2">
+                        <div key={menu.id} className="flex flex-col gap-3">
                           <h3 className="text-[13px] font-semibold text-clay">
                             {menu.name}
                           </h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {menuItems.map((item) => (
-                              <label
-                                key={item.id}
-                                className="flex items-start gap-2 p-3 rounded-xl border border-black/8 cursor-pointer hover:border-clay/30 transition"
+                          {visibleCategories.map((category) => {
+                            const categoryItems = category.items || [];
+                            if (categoryItems.length === 0) return null;
+
+                            const allSelected = isCategoryAllSelected(
+                              category.id,
+                            );
+                            const partiallySelected =
+                              isCategoryPartiallySelected(category.id);
+
+                            return (
+                              <div
+                                key={category.id}
+                                className="flex flex-col gap-2"
                               >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedMenuItemIds.includes(
-                                    item.id,
-                                  )}
-                                  onChange={() => toggleMenuItem(item.id)}
-                                  className="mt-1 text-clay focus:ring-clay"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[13px] font-medium text-text-primary">
-                                    {item.name}
-                                  </p>
-                                  <p className="text-[11px] text-text-muted">
-                                    {item.categoryName} · ฿{item.price}
-                                  </p>
+                                <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-clay/5 cursor-pointer hover:bg-clay/10 transition">
+                                  <input
+                                    type="checkbox"
+                                    checked={allSelected}
+                                    ref={(el) => {
+                                      if (el) {
+                                        el.indeterminate = partiallySelected;
+                                      }
+                                    }}
+                                    onChange={() => toggleCategory(category.id)}
+                                    className="text-clay focus:ring-clay"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <span className="text-[13px] font-semibold text-text-primary">
+                                      {category.name}
+                                    </span>
+                                    <span className="text-[11px] text-text-hint ml-2">
+                                      ({categoryItems.length} items)
+                                    </span>
+                                  </div>
+                                  <span className="text-[11px] text-text-muted whitespace-nowrap">
+                                    {
+                                      categoryItems.filter((item) =>
+                                        selectedMenuItemIds.includes(item.id),
+                                      ).length
+                                    }
+                                    /{categoryItems.length}
+                                  </span>
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-2">
+                                  {categoryItems.map((item) => (
+                                    <label
+                                      key={item.id}
+                                      className="flex items-start gap-2 p-3 rounded-xl border border-black/8 cursor-pointer hover:border-clay/30 transition"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedMenuItemIds.includes(
+                                          item.id,
+                                        )}
+                                        onChange={() => toggleMenuItem(item.id)}
+                                        className="mt-1 text-clay focus:ring-clay"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[13px] font-medium text-text-primary truncate">
+                                          {item.name}
+                                        </p>
+                                        <p className="text-[11px] text-text-muted">
+                                          ฿{item.price}
+                                        </p>
+                                      </div>
+                                    </label>
+                                  ))}
                                 </div>
-                              </label>
-                            ))}
-                          </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       );
                     })}
@@ -598,53 +774,169 @@ function PackagesDashboard({ packages, menus, branchId }: Props) {
                     </div>
 
                     <div className="border-t border-black/8 pt-5">
-                      <p className="text-[11px] font-medium text-text-hint uppercase tracking-wider mb-3">
-                        Included menu items
-                      </p>
+                      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                        <p className="text-[11px] font-medium text-text-hint uppercase tracking-wider">
+                          Included menu items
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-text-muted">
+                            {selectedMenuItemIds.length} selected
+                          </span>
+                          <div className="relative" ref={editDropdownRef}>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setCategoryDropdownOpen(!categoryDropdownOpen)
+                              }
+                              className="flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-lg border border-black/12 text-text-muted hover:border-clay/30 transition"
+                            >
+                              {categoryFilter === "all"
+                                ? "All categories"
+                                : allCategories.find(
+                                    (c) => c.id === categoryFilter,
+                                  )?.name || "All categories"}
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                            {categoryDropdownOpen && (
+                              <div className="absolute right-0 top-full mt-1 z-10 bg-white rounded-xl border border-black/8 shadow-lg min-w-[200px] max-h-[280px] overflow-y-auto py-1">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCategoryFilter("all");
+                                    setCategoryDropdownOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-[13px] hover:bg-clay/5 transition ${
+                                    categoryFilter === "all"
+                                      ? "text-clay font-medium bg-clay/5"
+                                      : "text-text-primary"
+                                  }`}
+                                >
+                                  All categories
+                                </button>
+                                {allCategories.map((cat) => (
+                                  <button
+                                    key={cat.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setCategoryFilter(cat.id);
+                                      setCategoryDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-[13px] hover:bg-clay/5 transition ${
+                                      categoryFilter === cat.id
+                                        ? "text-clay font-medium bg-clay/5"
+                                        : "text-text-primary"
+                                    }`}
+                                  >
+                                    <span className="block truncate">
+                                      {cat.name}
+                                    </span>
+                                    <span className="block text-[11px] text-text-hint truncate">
+                                      {cat.menuName} · {cat.items.length} items
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
 
                       <div className="flex flex-col gap-4">
                         {menus.map((menu) => {
-                          const menuItems =
-                            menu.categories?.flatMap((cat) =>
-                              (cat.items || []).map((item) => ({
-                                ...item,
-                                categoryName: cat.name,
-                                menuName: menu.name,
-                              })),
-                            ) || [];
+                          const visibleCategories = (
+                            menu.categories || []
+                          ).filter(
+                            (cat) =>
+                              categoryFilter === "all" ||
+                              categoryFilter === cat.id,
+                          );
 
-                          if (menuItems.length === 0) return null;
+                          if (visibleCategories.length === 0) return null;
 
                           return (
-                            <div key={menu.id} className="flex flex-col gap-2">
+                            <div key={menu.id} className="flex flex-col gap-3">
                               <h3 className="text-[13px] font-semibold text-clay">
                                 {menu.name}
                               </h3>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                {menuItems.map((item) => (
-                                  <label
-                                    key={item.id}
-                                    className="flex items-start gap-2 p-3 rounded-xl border border-black/8 cursor-pointer hover:border-clay/30 transition"
+                              {visibleCategories.map((category) => {
+                                const categoryItems = category.items || [];
+                                if (categoryItems.length === 0) return null;
+
+                                const allSelected = isCategoryAllSelected(
+                                  category.id,
+                                );
+                                const partiallySelected =
+                                  isCategoryPartiallySelected(category.id);
+
+                                return (
+                                  <div
+                                    key={category.id}
+                                    className="flex flex-col gap-2"
                                   >
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedMenuItemIds.includes(
-                                        item.id,
-                                      )}
-                                      onChange={() => toggleMenuItem(item.id)}
-                                      className="mt-1 text-clay focus:ring-clay"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-[13px] font-medium text-text-primary">
-                                        {item.name}
-                                      </p>
-                                      <p className="text-[11px] text-text-muted">
-                                        {item.categoryName} · ฿{item.price}
-                                      </p>
+                                    <label className="flex items-center gap-2 px-3 py-2 rounded-lg bg-clay/5 cursor-pointer hover:bg-clay/10 transition">
+                                      <input
+                                        type="checkbox"
+                                        checked={allSelected}
+                                        ref={(el) => {
+                                          if (el) {
+                                            el.indeterminate =
+                                              partiallySelected;
+                                          }
+                                        }}
+                                        onChange={() =>
+                                          toggleCategory(category.id)
+                                        }
+                                        className="text-clay focus:ring-clay"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <span className="text-[13px] font-semibold text-text-primary">
+                                          {category.name}
+                                        </span>
+                                        <span className="text-[11px] text-text-hint ml-2">
+                                          ({categoryItems.length} items)
+                                        </span>
+                                      </div>
+                                      <span className="text-[11px] text-text-muted whitespace-nowrap">
+                                        {
+                                          categoryItems.filter((item) =>
+                                            selectedMenuItemIds.includes(
+                                              item.id,
+                                            ),
+                                          ).length
+                                        }
+                                        /{categoryItems.length}
+                                      </span>
+                                    </label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pl-2">
+                                      {categoryItems.map((item) => (
+                                        <label
+                                          key={item.id}
+                                          className="flex items-start gap-2 p-3 rounded-xl border border-black/8 cursor-pointer hover:border-clay/30 transition"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedMenuItemIds.includes(
+                                              item.id,
+                                            )}
+                                            onChange={() =>
+                                              toggleMenuItem(item.id)
+                                            }
+                                            className="mt-1 text-clay focus:ring-clay"
+                                          />
+                                          <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-medium text-text-primary truncate">
+                                              {item.name}
+                                            </p>
+                                            <p className="text-[11px] text-text-muted">
+                                              ฿{item.price}
+                                            </p>
+                                          </div>
+                                        </label>
+                                      ))}
                                     </div>
-                                  </label>
-                                ))}
-                              </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           );
                         })}
