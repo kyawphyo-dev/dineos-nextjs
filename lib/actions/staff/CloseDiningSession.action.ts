@@ -50,7 +50,14 @@ async function CloseDiningSession(params: CloseDiningSessionParams) {
         data: { status: "available" },
       });
 
-      return { updatedSession, updatedTable };
+      const updatedReservation = updatedSession.reservationId
+        ? await tx.reservation.update({
+            where: { id: updatedSession.reservationId },
+            data: { status: "completed" },
+          })
+        : null;
+
+      return { updatedSession, updatedTable, updatedReservation };
     });
 
     return {
@@ -58,6 +65,9 @@ async function CloseDiningSession(params: CloseDiningSessionParams) {
       data: {
         session: JSON.parse(JSON.stringify(result.updatedSession)),
         table: JSON.parse(JSON.stringify(result.updatedTable)),
+        reservation: result.updatedReservation
+          ? JSON.parse(JSON.stringify(result.updatedReservation))
+          : null,
       },
       message: "Session closed successfully.",
     };

@@ -21,6 +21,17 @@ export async function getStaffTables() {
       where: { branchId },
       include: {
         zone: true,
+        reservations: {
+          where: {
+            status: {
+              in: ["pending", "confirmed", "arrived"],
+            },
+          },
+          orderBy: {
+            reservedTime: "asc",
+          },
+          take: 1,
+        },
         diningSessions: {
           where: {
             status: {

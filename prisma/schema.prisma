@@ -137,6 +137,7 @@ model Staff {
   reservations Reservation[]
 }
 
+
 model Table {
   id           String         @id @default(cuid())
   tableNumber  String
@@ -328,7 +329,8 @@ model Reservation {
 
   guestCount     Int
 
-  reservedAt     DateTime   
+  reservedAt     DateTime  
+  reservedTime   DateTime 
   seatedAt DateTime?      
 
   status         ReservationStatus @default(pending)

@@ -35,7 +35,7 @@ export default function StartSessionPanel({
       <p className="text-[12px] text-text-muted mb-2">Choose package</p>
       <div className="flex flex-col gap-2 mb-5">
         {packages?.map((pkg) => {
-          const Icon = PACKAGE_ICONS[pkg.icon] ?? Soup;
+          const Icon = PACKAGE_ICONS[pkg.icon ?? ""] ?? Soup;
           return (
             <button
               key={pkg.id}

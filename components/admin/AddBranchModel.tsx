@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ChangeEvent } from "react";
 import { X } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -39,7 +40,7 @@ export default function AddBranchModal({
 
   const set =
     (field: keyof FormState) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    (e: ChangeEvent<HTMLInputElement>) =>
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
   return (

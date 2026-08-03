@@ -5,6 +5,7 @@ import { ChefHat, Building2, ChevronLeft, Plus, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Restaurant } from "@/app/types/restaurant";
 import { useState } from "react";
+import type { MouseEvent } from "react";
 import AddBranchModal, { FormState } from "@/components/admin/AddBranchModel";
 import { toast } from "sonner";
 import CreateBranch from "@/lib/actions/CreateBranch.action";
@@ -26,7 +27,7 @@ export default function BranchSelect({
   };
   const handleDeleteBranch = (
     branchId: string,
-    e: React.MouseEvent<HTMLButtonElement>,
+    e: MouseEvent<HTMLButtonElement>,
   ) => {
     e.stopPropagation();
     alert("deleteBranch");
