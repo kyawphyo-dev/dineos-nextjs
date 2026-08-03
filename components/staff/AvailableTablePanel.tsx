@@ -3,7 +3,7 @@
 import { useState } from "react";
 import StartSessionPanel from "@/components/staff/StartSessionPanel";
 import ReservePanel from "@/components/staff/ReservePanel";
-import type { StaffPackage, Reservation } from "@/app/types/staff";
+import type { StaffPackage, CreateReservationInput } from "@/app/types/staff";
 
 type Tab = "start" | "reserve";
 
@@ -11,7 +11,7 @@ interface Props {
   packages?: StaffPackage[];
   tableId: string;
   onStart: (pkg: StaffPackage, guestCount: number, tableId: string) => void;
-  onReserve: (reservation: Reservation) => void;
+  onReserve: (reservation: CreateReservationInput, tableId: string) => void;
 }
 
 export default function AvailableTablePanel({
@@ -54,7 +54,10 @@ export default function AvailableTablePanel({
           packages={packages}
         />
       ) : (
-        <ReservePanel tableId={tableId} onReserve={onReserve} />
+        <ReservePanel
+          tableId={tableId}
+          onReserve={(reservation) => onReserve(reservation, tableId)}
+        />
       )}
     </div>
   );

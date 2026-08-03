@@ -7,11 +7,20 @@ import TableCard from "@/components/staff/TableCard";
 import AvailableTablePanel from "@/components/staff/AvailableTablePanel";
 import QrHandoffCard from "@/components/staff/QrHandoffCard";
 import ReservationCard from "@/components/staff/ReservationCard";
-import type { FrontTable, StaffPackage, Reservation } from "@/app/types/staff";
+import type {
+  CreateReservationInput,
+  FrontTable,
+  ReservationStatus,
+  StaffPackage,
+} from "@/app/types/staff";
 import type { Restaurant, Table } from "@/app/types/restaurant";
 import { Branch } from "@prisma/client";
 import StartDiningSession from "@/lib/actions/staff/StartDiningSession.action";
 import CloseDiningSession from "@/lib/actions/staff/CloseDiningSession.action";
+import CreateReservation from "@/lib/actions/staff/CreateReservation.action";
+import CancelReservation from "@/lib/actions/staff/CancelReservation.action";
+import NoShowReservation from "@/lib/actions/staff/NoShowReservation.action";
+import SeatReservation from "@/lib/actions/staff/SeatReservation.action";
 import StatusLegend from "./StatusLegend";
 
 interface TableWithZone extends Table {
@@ -23,6 +32,16 @@ interface TableWithZone extends Table {
     guestCount: number;
     startedAt: string;
     startedBy?: { name: string } | null;
+  }>;
+  reservations?: Array<{
+    id: string;
+    customerName: string;
+    customerPhone: string;
+    customerEmail?: string | null;
+    guestCount: number;
+    reservedTime: string;
+    status: string;
+    note?: string | null;
   }>;
 }
 
@@ -48,11 +67,34 @@ export default function StaffDashboard({
   const groupedTables: GroupedTables = realTables.reduce((acc, table) => {
     const zoneName = table.zone?.name || "Unassigned";
     const diningSession = table.diningSessions?.[0];
+    const reservation = table.reservations?.[0];
+    const normalizedStatus =
+      table.status === "available" ||
+      table.status === "occupied" ||
+      table.status === "attention" ||
+      table.status === "reserved"
+        ? (table.status as FrontTable["status"])
+        : "available";
     const frontTable: FrontTable = {
       id: table.tableNumber,
       seats: table.capacity,
-      status: (table.status as FrontTable["status"]) || "available",
-      meta: `${table.capacity} seats`,
+      status: normalizedStatus,
+      reservation: reservation
+        ? {
+            id: reservation.id,
+            customerName: reservation.customerName,
+            customerPhone: reservation.customerPhone,
+            customerEmail: reservation.customerEmail ?? null,
+            guestCount: reservation.guestCount,
+            reservedTime: reservation.reservedTime,
+            status: reservation.status as ReservationStatus,
+            note: reservation.note ?? null,
+          }
+        : undefined,
+      meta:
+        normalizedStatus === "reserved" && reservation?.reservedTime
+          ? formatReservationTime(reservation.reservedTime)
+          : `${table.capacity} seats`,
       session: diningSession
         ? {
             id: diningSession.id,
@@ -96,7 +138,6 @@ export default function StaffDashboard({
 
     if (result.success) {
       setSelectedId(null);
-      // Optionally refresh the page or update state here
       window.location.reload();
     } else {
       alert(result.message || "Failed to start session");
@@ -121,16 +162,80 @@ export default function StaffDashboard({
     }
   };
 
-  const handleReserve = (reservation: Reservation) => {
-    console.log("Reserve table (placeholder)", { selectedId, reservation });
+  const handleReserve = async (
+    reservation: CreateReservationInput,
+    tableNumber: string,
+  ) => {
+    if (!branch?.id) return;
+
+    const result = await CreateReservation({
+      tableNumber,
+      branchId: branch.id,
+      ...reservation,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to create reservation");
+    }
   };
 
-  const handleCancelReservation = () => {
-    console.log("Cancel reservation (placeholder)", { selectedId });
+  const handleCancelReservation = async (reservationId: string) => {
+    if (!branch?.id) return;
+
+    const result = await CancelReservation({
+      reservationId,
+      branchId: branch.id,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to cancel reservation");
+    }
   };
 
-  const handleSeatNow = () => {
-    console.log("Seat now (placeholder)", { selectedId });
+  const handleNoShowReservation = async (reservationId: string) => {
+    if (!branch?.id) return;
+
+    const result = await NoShowReservation({
+      reservationId,
+      branchId: branch.id,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to mark no-show");
+    }
+  };
+
+  const handleSeatNow = async (params: {
+    reservationId: string;
+    tableNumber: string;
+    packageId?: string;
+    guestCount: number;
+  }) => {
+    if (!branch?.id) return;
+
+    const result = await SeatReservation({
+      reservationId: params.reservationId,
+      tableNumber: params.tableNumber,
+      branchId: branch.id,
+      packageId: params.packageId ?? null,
+      guestCount: params.guestCount,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to seat reservation");
+    }
   };
 
   return (
@@ -245,8 +350,36 @@ export default function StaffDashboard({
                 ) : selectedTable.status === "reserved" ? (
                   <ReservationCard
                     table={selectedTable}
-                    onCancel={handleCancelReservation}
-                    onSeatNow={handleSeatNow}
+                    packages={packages}
+                    onCancel={() => {
+                      const reservationId = selectedTable.reservation?.id;
+                      if (!reservationId) {
+                        alert("Reservation not found");
+                        return;
+                      }
+                      void handleCancelReservation(reservationId);
+                    }}
+                    onNoShow={() => {
+                      const reservationId = selectedTable.reservation?.id;
+                      if (!reservationId) {
+                        alert("Reservation not found");
+                        return;
+                      }
+                      void handleNoShowReservation(reservationId);
+                    }}
+                    onSeatNow={({ packageId, guestCount }) => {
+                      const reservationId = selectedTable.reservation?.id;
+                      if (!reservationId) {
+                        alert("Reservation not found");
+                        return;
+                      }
+                      void handleSeatNow({
+                        reservationId,
+                        tableNumber: selectedTable.id,
+                        packageId,
+                        guestCount,
+                      });
+                    }}
                   />
                 ) : (
                   <AvailableTablePanel
@@ -268,4 +401,16 @@ export default function StaffDashboard({
       </div>
     </div>
   );
+}
+
+function formatReservationTime(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
 }

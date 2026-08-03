@@ -44,7 +44,12 @@ export function TablesProvider({ children }: { children: ReactNode }) {
     setTables((prev) =>
       prev.map((t) =>
         t.id === tableId
-          ? { ...t, status: "reserved", meta: `Reserved ${reservation.time}`, reservation }
+          ? {
+              ...t,
+              status: "reserved",
+              meta: `Reserved ${formatReservationTime(reservation.reservedTime)}`,
+              reservation,
+            }
           : t
       )
     );
@@ -73,4 +78,16 @@ export function useTables() {
   const ctx = useContext(TablesContext);
   if (!ctx) throw new Error("useTables must be used within a TablesProvider");
   return ctx;
+}
+
+function formatReservationTime(value: string) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(d);
 }
