@@ -17,12 +17,16 @@ export type CustomerTableSessionResult = {
     id: string;
     tableNumber: string;
   };
-  session:
-    | {
-        id: string;
-        status: (typeof ACTIVE_DINING_STATUSES)[number];
-      }
-    | null;
+  session: {
+    id: string;
+    status: (typeof ACTIVE_DINING_STATUSES)[number];
+    package: {
+      id: string;
+      name: string;
+      description: string;
+      price: number;
+    } | null;
+  } | null;
 };
 
 export default async function GetCustomerTableSession(params: {
@@ -41,10 +45,8 @@ export default async function GetCustomerTableSession(params: {
   const { tableIdentifier } = validate.data;
 
   try {
-    const table = await prisma.table.findFirst({
-      where: {
-        OR: [{ id: tableIdentifier }, { qr: tableIdentifier }],
-      },
+    const table = await prisma.table.findUnique({
+      where: { id: tableIdentifier },
       select: {
         id: true,
         tableNumber: true,
@@ -72,6 +74,14 @@ export default async function GetCustomerTableSession(params: {
       select: {
         id: true,
         status: true,
+        package: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            price: true,
+          },
+        },
       },
     });
 
@@ -83,6 +93,14 @@ export default async function GetCustomerTableSession(params: {
           ? {
               id: session.id,
               status: session.status as (typeof ACTIVE_DINING_STATUSES)[number],
+              package: session.package
+                ? {
+                    id: session.package.id,
+                    name: session.package.name,
+                    description: session.package.description,
+                    price: session.package.price,
+                  }
+                : null,
             }
           : null,
       },
@@ -92,4 +110,3 @@ export default async function GetCustomerTableSession(params: {
     return errorAction(e);
   }
 }
-
