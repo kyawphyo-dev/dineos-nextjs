@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import GetCustomerTableSession from "@/lib/actions/customer/GetCustomerTableSession.action";
 import NoDiningSessionView from "./NoDiningSessionView";
+import CustomerTableSessionProvider from "./CustomerTableSessionProvider";
 
 export type Params = {
   id: string;
@@ -19,9 +20,22 @@ export default async function TableLayout({
   const hasSession = Boolean(result.success && result.data?.session);
 
   if (!hasSession) {
-    return <NoDiningSessionView tableIdentifier={id} />;
+    return (
+      <NoDiningSessionView
+        tableIdentifier={id}
+        tableNumber={result.success ? result.data?.table.tableNumber : null}
+      />
+    );
   }
 
-  return children;
+  return (
+    <CustomerTableSessionProvider
+      value={{
+        table: result.data!.table,
+        session: result.data!.session!,
+      }}
+    >
+      {children}
+    </CustomerTableSessionProvider>
+  );
 }
-

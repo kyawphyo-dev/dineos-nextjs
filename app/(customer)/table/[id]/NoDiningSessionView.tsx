@@ -1,16 +1,16 @@
-import { AlertTriangle, PhoneCall } from "lucide-react";
-import StatusBar from "@/components/shared/StatusBar";
+import { AlertTriangle, Bell } from "lucide-react";
+
 import CallStaffDemoButton from "./CallStaffDemoButton";
 
 export default function NoDiningSessionView({
   tableIdentifier,
+  tableNumber,
 }: {
   tableIdentifier: string;
+  tableNumber?: string | null;
 }) {
   return (
     <div className="flex flex-col min-h-screen bg-cream">
-      <StatusBar dark />
-
       <div className="bg-bark px-5 pt-6 pb-7 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-36 h-36 rounded-full bg-clay opacity-10 translate-x-8 -translate-y-8" />
         <div className="flex items-center gap-2 mb-4">
@@ -31,7 +31,7 @@ export default function NoDiningSessionView({
           <span className="text-[11px] text-white/75">Table</span>
           <span className="w-px h-4 bg-white/25" />
           <span className="text-[15px] font-medium text-white">
-            {tableIdentifier}
+            {tableNumber ?? tableIdentifier}
           </span>
         </div>
       </div>
@@ -40,7 +40,7 @@ export default function NoDiningSessionView({
         <div className="bg-white rounded-2xl border border-black/10 p-4">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-xl bg-clay-light flex items-center justify-center flex-shrink-0">
-              <PhoneCall className="w-5 h-5 text-clay-dark" />
+              <Bell className="w-5 h-5 text-clay-dark" />
             </div>
             <div className="min-w-0">
               <p className="text-[15px] font-medium text-text-primary">
@@ -60,4 +60,3 @@ export default function NoDiningSessionView({
     </div>
   );
 }
-
