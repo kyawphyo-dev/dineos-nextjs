@@ -88,6 +88,7 @@ export const CUSTOMER_MENU_ITEMS: CustomerMenuItem[] = [
 export const MOCK_CUSTOMER_ORDERS: CustomerOrder[] = [
   {
     id: "1032",
+    tableId: "demo-table",
     status: "preparing",
     placedAt: "9:44 AM",
     estimatedMin: 8,
