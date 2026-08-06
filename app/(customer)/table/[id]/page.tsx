@@ -12,7 +12,7 @@ export default function LandingPage() {
   const params = useParams();
   const tableId = params.id as string;
   const { setTableId } = useCart();
-  const { table, session } = useCustomerTableSession();
+  const { restaurant, branch, table, session } = useCustomerTableSession();
 
   useEffect(() => {
     setTableId(tableId);
@@ -29,12 +29,11 @@ export default function LandingPage() {
           </span>
         </div>
         <h1 className="text-[22px] font-medium text-white leading-snug">
-          Baan Rim Naam
-          <br />
-          Thai Kitchen
+          {restaurant.name}
         </h1>
         <p className="text-[13px] text-clay-mid mt-1">
-          Sukhumvit, Bangkok · Open until 10 PM
+          {branch.name}
+          {branch.location ? ` · ${branch.location}` : ""}
         </p>
         <div className="mt-4 inline-flex items-center gap-2 bg-clay rounded-xl px-3.5 py-2">
           <span className="text-[11px] text-white/75">Table</span>
@@ -70,7 +69,7 @@ export default function LandingPage() {
 
         <div className="mt-3 flex items-center justify-center gap-1.5 text-[12px] text-text-hint">
           <Users className="w-3.5 h-3.5" />
-          <span>2 guests at this table</span>
+          <span>{session.guestCount} guests at this table</span>
         </div>
       </div>
     </div>
@@ -89,7 +88,7 @@ function AssignedPackageCard({
   return (
     <div className="w-full text-left bg-white rounded-2xl border border-black/10 p-4">
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-clay-light flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-clay-light flex items-center justify-center shrink-0">
           <Package className="w-5 h-5 text-clay-dark" />
         </div>
         <div className="flex-1 min-w-0">
@@ -97,7 +96,7 @@ function AssignedPackageCard({
           <p className="text-[12px] text-text-muted mt-0.5">{description}</p>
         </div>
         {price !== null && (
-          <div className="text-right flex-shrink-0">
+          <div className="text-right shrink-0">
             <p className="text-[18px] font-medium text-clay-dark">฿{price}</p>
             <p className="text-[11px] text-text-hint">/ person</p>
           </div>

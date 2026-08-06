@@ -17,15 +17,54 @@ import {
   Clock,
   CreditCard,
   ChevronDown,
+  UtensilsCrossed,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { DietaryBadge, SpiceBadge } from "@/components/shared/DietaryTag";
-import { CATEGORIES, CUSTOMER_MENU_ITEMS } from "@/app/data/customer-mock";
 import { useCart } from "@/context/CartContext";
-import { useOrders } from "@/context/OrdersContext";
 import { useCustomerTableSession } from "@/app/(customer)/table/[id]/CustomerTableSessionProvider";
 import type { CustomerMenuItem } from "@/app/types/customer";
+
+const ALL_CATEGORY = "All";
+const IMG_EMOJI_MAP: Record<string, string> = {
+  soup: "🍲",
+  curry: "🍛",
+  salad: "🥗",
+  noodle: "🍜",
+  rice: "🍚",
+  chicken: "🍗",
+  fish: "🐟",
+  shrimp: "🦐",
+  beef: "🥩",
+  pork: "🥓",
+  egg: "🍳",
+  tofu: "🧈",
+  mango: "🥭",
+  coconut: "🥥",
+  drink: "🥤",
+  tea: "🍵",
+  coffee: "☕",
+  dessert: "🍰",
+  ice: "🍨",
+};
+
+function pickEmoji(name: string, category: string): string {
+  const haystack = `${name} ${category}`.toLowerCase();
+  for (const key of Object.keys(IMG_EMOJI_MAP)) {
+    if (haystack.includes(key)) return IMG_EMOJI_MAP[key];
+  }
+  return "🍽️";
+}
+
+function formatDuration(startedAtIso: string): string {
+  const start = new Date(startedAtIso).getTime();
+  const now = Date.now();
+  const diffMs = Math.max(0, now - start);
+  const minutes = Math.floor(diffMs / 60_000);
+  const hours = Math.floor(minutes / 60);
+  const rem = minutes % 60;
+  return `${hours}h ${rem}m`;
+}
 
 export default function MenuPage() {
   const router = useRouter();
@@ -39,54 +78,74 @@ export default function MenuPage() {
     tableId,
     setTableId,
   } = useCart();
-  const { orders } = useOrders();
-  const { table, session } = useCustomerTableSession();
+  const { restaurant, branch, table, session, categories, orders } =
+    useCustomerTableSession();
   const id = params.id as string;
 
   useEffect(() => {
     if (id) setTableId(id);
   }, [id, setTableId]);
 
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState(ALL_CATEGORY);
   const [search, setSearch] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [showBurger, setShowBurger] = useState(false);
   const [showScanModal, setShowScanModal] = useState(false);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [language, setLanguage] = useState("EN");
-  const [sessionElapsed, setSessionElapsed] = useState("0h 0m");
+  const [, setTick] = useState(0);
 
   useEffect(() => {
-    const startTime = Date.now();
-    const interval = setInterval(() => {
-      const diffMs = Date.now() - startTime;
-      const minutes = Math.floor(diffMs / 60_000);
-      const hours = Math.floor(minutes / 60);
-      const remMinutes = minutes % 60;
-      setSessionElapsed(`${hours}h ${remMinutes}m`);
-    }, 60_000);
+    const interval = setInterval(() => setTick((n) => n + 1), 60_000);
     return () => clearInterval(interval);
   }, []);
 
-  const filtered = useMemo(() => {
-    return CUSTOMER_MENU_ITEMS.filter((item) => {
-      const matchCat =
-        activeCategory === "All" || item.category === activeCategory;
-      const matchSearch =
-        search === "" ||
-        item.name.toLowerCase().includes(search.toLowerCase()) ||
-        item.description.toLowerCase().includes(search.toLowerCase());
-      return matchCat && matchSearch;
-    });
-  }, [activeCategory, search]);
+  const sessionElapsed = formatDuration(session.startedAt);
 
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = { All: CUSTOMER_MENU_ITEMS.length };
-    CUSTOMER_MENU_ITEMS.forEach((item) => {
-      counts[item.category] = (counts[item.category] ?? 0) + 1;
+  const allCategoryNames = useMemo(
+    () => [ALL_CATEGORY, ...categories.map((c) => c.name)],
+    [categories],
+  );
+
+  const menuItems: CustomerMenuItem[] = useMemo(() => {
+    return categories.flatMap((cat) =>
+      cat.items.map((it) => ({
+        id: it.id,
+        name: it.name,
+        description: it.description ?? "",
+        price: it.price,
+        category: cat.name,
+        categoryId: cat.id,
+        imageUrl: it.imageUrl,
+        emoji: pickEmoji(it.name, cat.name),
+        status: it.status,
+      })),
+    );
+  }, [categories]);
+
+  const categoryCounts: Record<string, number> = useMemo(() => {
+    const counts: Record<string, number> = {
+      [ALL_CATEGORY]: menuItems.length,
+    };
+    categories.forEach((c) => {
+      counts[c.name] = c.items.length;
     });
     return counts;
-  }, []);
+  }, [categories, menuItems.length]);
+
+  const filtered = useMemo(() => {
+    return menuItems.filter((item) => {
+      const matchCat =
+        activeCategory === ALL_CATEGORY || item.category === activeCategory;
+      if (!matchCat) return false;
+      if (search === "") return true;
+      const needle = search.toLowerCase();
+      return (
+        item.name.toLowerCase().includes(needle) ||
+        (item.description && item.description.toLowerCase().includes(needle))
+      );
+    });
+  }, [menuItems, activeCategory, search]);
 
   const orderedItemCount = useMemo(() => {
     return orders.reduce(
@@ -184,10 +243,11 @@ export default function MenuPage() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <h1 className="text-[22px] font-medium text-white leading-snug drop-shadow-sm">
-                Baan Rim Naam
+                {restaurant.name}
               </h1>
               <p className="text-[13px] text-clay-mid mt-0.5 drop-shadow-sm">
-                Sukhumvit Branch · Bangkok
+                {branch.name}
+                {branch.location ? ` · ${branch.location}` : ""}
               </p>
             </div>
             <div className="bg-white rounded-2xl shadow-lg px-3.5 py-2 flex items-center gap-2">
@@ -264,7 +324,7 @@ export default function MenuPage() {
 
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <p className="text-[11px] font-medium text-text-hint uppercase tracking-wider">
-          {activeCategory === "All" ? "Chef's picks" : activeCategory}
+          {activeCategory === ALL_CATEGORY ? "Chef's picks" : activeCategory}
         </p>
         <button
           onClick={() => {
@@ -283,7 +343,7 @@ export default function MenuPage() {
       </div>
 
       <div className="flex overflow-x-auto scrollbar-hide px-5 gap-1.5 pb-1">
-        {CATEGORIES.map((cat) => (
+        {allCategoryNames.map((cat) => (
           <button
             key={cat}
             onClick={() => setActiveCategory(cat)}
@@ -308,32 +368,46 @@ export default function MenuPage() {
       </div>
 
       <div className="flex-1 px-5 py-3">
-        <div className="flex flex-col gap-2.5">
-          <AnimatePresence mode="popLayout">
-            {filtered.map((item) => (
-              <motion.div
-                key={item.id}
-                layout
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.18 }}
-              >
-                <MenuItemCard
-                  item={item}
-                  qty={getQty(item.id)}
-                  onAdd={() => addItem(item)}
-                  onRemove={() => removeItem(item)}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          {filtered.length === 0 && (
-            <div className="text-center py-12 text-text-hint text-[14px]">
-              No dishes match your search.
+        {menuItems.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="w-16 h-16 rounded-2xl bg-cream-dark flex items-center justify-center mx-auto mb-4">
+              <UtensilsCrossed className="w-7 h-7 text-text-hint" />
             </div>
-          )}
-        </div>
+            <p className="text-[14px] text-text-primary font-medium">
+              No menu available
+            </p>
+            <p className="text-[12px] text-text-hint mt-1">
+              Please ask staff for the menu
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2.5">
+            <AnimatePresence mode="popLayout">
+              {filtered.map((item) => (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.18 }}
+                >
+                  <MenuItemCard
+                    item={item}
+                    qty={getQty(item.id)}
+                    onAdd={() => addItem(item)}
+                    onRemove={() => removeItem(item)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {filtered.length === 0 && (
+              <div className="text-center py-12 text-text-hint text-[14px]">
+                No dishes match your search.
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <AnimatePresence>
@@ -380,10 +454,10 @@ export default function MenuPage() {
                 <div className="flex items-start justify-between relative">
                   <div>
                     <h2 className="text-[20px] font-medium text-white">
-                      Baan Rim Naam
+                      {restaurant.name}
                     </h2>
                     <p className="text-[12px] text-clay-mid mt-0.5">
-                      Sukhumvit Branch
+                      {branch.name}
                     </p>
                   </div>
                   <button
@@ -477,7 +551,7 @@ export default function MenuPage() {
                   Categories
                 </p>
                 <div className="flex flex-col gap-1.5">
-                  {CATEGORIES.map((cat) => (
+                  {allCategoryNames.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => {
@@ -682,22 +756,25 @@ function MenuItemCard({
 }) {
   return (
     <div className="bg-white rounded-2xl border border-black/8 flex items-center gap-3 p-3">
-      <div className="w-16 h-16 rounded-xl bg-cream-dark flex items-center justify-center text-[28px] shrink-0">
-        {item.emoji}
-      </div>
+      {item.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          className="w-16 h-16 rounded-xl object-cover shrink-0 bg-cream-dark"
+        />
+      ) : (
+        <div className="w-16 h-16 rounded-xl bg-cream-dark flex items-center justify-center text-[28px] shrink-0">
+          {item.emoji ?? "🍽️"}
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-medium text-text-primary truncate">
           {item.name}
         </p>
         <p className="text-[11px] text-text-muted mt-0.5 line-clamp-2 leading-snug">
-          {item.description}
+          {item.description || "No description"}
         </p>
-        <div className="flex flex-wrap gap-1 mt-1.5">
-          {item.dietary.map((d) => (
-            <DietaryBadge key={d} tag={d} />
-          ))}
-          {item.spice && <SpiceBadge level={item.spice} />}
-        </div>
       </div>
       <div className="flex flex-col items-end gap-2 shrink-0">
         <p className="text-[14px] font-medium text-clay-dark">฿{item.price}</p>

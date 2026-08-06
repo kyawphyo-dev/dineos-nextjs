@@ -1,6 +1,10 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
+import type {
+  CustomerTableCategory,
+  CustomerTableOrder,
+} from "@/lib/actions/customer/GetCustomerTableSession.action";
 
 export type CustomerAssignedPackage = {
   id: string;
@@ -9,16 +13,38 @@ export type CustomerAssignedPackage = {
   price: number;
 };
 
+export type CustomerRestaurantInfo = {
+  id: string;
+  name: string;
+};
+
+export type CustomerBranchInfo = {
+  id: string;
+  name: string;
+  location: string | null;
+};
+
+export type CustomerTableInfo = {
+  id: string;
+  tableNumber: string;
+  capacity: number;
+};
+
+export type CustomerSessionInfo = {
+  id: string;
+  status: "seated" | "ordering" | "dining" | "finishedEating" | "paying";
+  startedAt: string;
+  guestCount: number;
+  package: CustomerAssignedPackage | null;
+};
+
 export type CustomerTableSessionContextValue = {
-  table: {
-    id: string;
-    tableNumber: string;
-  };
-  session: {
-    id: string;
-    status: "seated" | "ordering" | "dining" | "finishedEating" | "paying";
-    package: CustomerAssignedPackage | null;
-  };
+  restaurant: CustomerRestaurantInfo;
+  branch: CustomerBranchInfo;
+  table: CustomerTableInfo;
+  session: CustomerSessionInfo;
+  categories: CustomerTableCategory[];
+  orders: CustomerTableOrder[];
 };
 
 const CustomerTableSessionContext = createContext<

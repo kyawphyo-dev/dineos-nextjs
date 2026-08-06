@@ -5,7 +5,8 @@ export type CustomerPackage = {
   name: string;
   description: string;
   price: number;
-  emoji: string;
+  emoji?: string;
+  imageUrl?: string | null;
 };
 
 export type DietaryTag = "Halal" | "Vegan" | "Vegetarian" | "Gluten-free";
@@ -16,15 +17,26 @@ export type CustomerMenuItem = {
   name: string;
   description: string;
   price: number;
-  emoji: string;
+  emoji?: string;
+  imageUrl?: string | null;
   category: string;
-  dietary: DietaryTag[];
+  categoryId?: string;
+  dietary?: DietaryTag[];
   spice?: SpiceLevel;
+  status?: "available" | "soldOut";
 };
 
 export type CartItem = CustomerMenuItem & { qty: number };
 
-export type CustomerOrderStatus = "received" | "preparing" | "ready";
+export type CustomerOrderStatus =
+  | "received"
+  | "preparing"
+  | "ready"
+  | "pending"
+  | "confirm"
+  | "served"
+  | "completed"
+  | "cancelled";
 
 export type CustomerOrderItem = {
   name: string;
@@ -37,6 +49,6 @@ export type CustomerOrder = {
   tableId: string;
   status: CustomerOrderStatus;
   placedAt: string;
-  estimatedMin: number;
+  estimatedMin?: number;
   items: CustomerOrderItem[];
 };
