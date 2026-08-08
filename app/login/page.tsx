@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
-import { ChefHat } from "lucide-react";
+import { ChefHat, Eye, EyeClosed } from "lucide-react";
 import { motion } from "framer-motion";
 import type { LoginMethod } from "@/lib/auth";
 import { ROLE_HOME } from "@/lib/auth";
@@ -27,6 +27,7 @@ export default function LoginPage() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +53,12 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("Incorrect credentials. Please try again.");
+        if (mode === "password") {
+          setPassword("");
+          setShowPassword(false);
+        } else {
+          setPin("");
+        }
         setLoading(false);
         return;
       }
@@ -60,6 +67,12 @@ export default function LoginPage() {
     } catch (err) {
       console.error("Login error:", err);
       setError("An error occurred during login. Please try again.");
+      if (mode === "password") {
+        setPassword("");
+        setShowPassword(false);
+      } else {
+        setPin("");
+      }
       setLoading(false);
     }
   };
@@ -94,6 +107,7 @@ export default function LoginPage() {
             onClick={() => {
               setMode("password");
               setError(null);
+              setShowPassword(false);
             }}
             className={`flex-1 py-2.5 text-[12px] font-medium ${
               mode === "password"
@@ -141,13 +155,27 @@ export default function LoginPage() {
               <label className="text-[12px] text-text-muted mb-1.5 block">
                 Password
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full rounded-xl border border-black/12 px-3.5 py-2.5 text-[14px] outline-none focus:border-clay mb-5"
-              />
+              <div className="relative mb-5">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl border border-black/12 px-3.5 py-2.5 pr-11 text-[14px] outline-none focus:border-clay"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeClosed className="w-4.5 h-4.5" />
+                  ) : (
+                    <Eye className="w-4.5 h-4.5" />
+                  )}
+                </button>
+              </div>
             </div>
           ) : (
             <div>
