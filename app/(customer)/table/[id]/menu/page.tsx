@@ -5,8 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import {
   ShoppingCart,
   Search,
-  Plus,
-  Minus,
   Menu,
   X,
   QrCode,
@@ -24,6 +22,7 @@ import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
 import { useCustomerTableSession } from "@/app/(customer)/table/[id]/CustomerTableSessionProvider";
 import type { CustomerMenuItem } from "@/app/types/customer";
+import { MenuItemCard } from "@/components/customer/MenuItemCard";
 
 const ALL_CATEGORY = "All";
 const IMG_EMOJI_MAP: Record<string, string> = {
@@ -184,7 +183,7 @@ export default function MenuPage() {
         <div className="h-52 bg-linear-to-br from-bark via-bark to-bark-mid relative overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=elegant%20thai%20restaurant%20interior%20with%20warm%20lighting%20wooden%20tables%20decorative%20plants&image_size=landscape_16_9"
+            src="https://res.cloudinary.com/dtdjpi4qs/image/upload/v1786106093/__nhcnrr.jpg"
             alt="Restaurant cover"
             className="absolute inset-0 w-full h-full object-cover opacity-60"
           />
@@ -242,20 +241,20 @@ export default function MenuPage() {
         <div className="px-5 -mt-28 relative z-10">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-[22px] font-medium text-white leading-snug drop-shadow-sm">
+              <h1 className="text-[18px] md:text-[22px] font-medium text-white leading-snug drop-shadow-sm">
                 {restaurant.name}
               </h1>
-              <p className="text-[13px] text-clay-mid mt-0.5 drop-shadow-sm">
+              <p className="text-[13px] text-clay-mid mt-0.5 drop-shadow-sm mb-0.5">
                 {branch.name}
                 {branch.location ? ` · ${branch.location}` : ""}
               </p>
-            </div>
-            <div className="bg-white rounded-2xl shadow-lg px-3.5 py-2 flex items-center gap-2">
-              <span className="text-[11px] text-text-hint">Table</span>
-              <span className="w-px h-4 bg-black/10" />
-              <span className="text-[17px] font-semibold text-clay-dark">
-                {table.tableNumber}
-              </span>
+              <div className="bg-white rounded-2xl shadow-lg px-3 py-1 flex items-center gap-2 w-fit">
+                <span className="text-[11px] text-text-hint">Table</span>
+                <span className="w-px h-4 bg-black/10" />
+                <span className="text-[14px] font-semibold text-clay-dark">
+                  {table.tableNumber}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -324,7 +323,7 @@ export default function MenuPage() {
 
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <p className="text-[11px] font-medium text-text-hint uppercase tracking-wider">
-          {activeCategory === ALL_CATEGORY ? "Chef's picks" : activeCategory}
+          {activeCategory === ALL_CATEGORY ? "All dishes" : activeCategory}
         </p>
         <button
           onClick={() => {
@@ -382,11 +381,10 @@ export default function MenuPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence>
               {filtered.map((item) => (
                 <motion.div
                   key={item.id}
-                  layout
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
@@ -436,6 +434,7 @@ export default function MenuPage() {
         {showBurger && (
           <>
             <motion.div
+              key="burger-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -443,6 +442,7 @@ export default function MenuPage() {
               className="fixed inset-0 bg-black/50 z-50"
             />
             <motion.aside
+              key="burger-panel"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -606,6 +606,7 @@ export default function MenuPage() {
         {showScanModal && (
           <>
             <motion.div
+              key="scan-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -613,6 +614,7 @@ export default function MenuPage() {
               className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-5"
             />
             <motion.div
+              key="scan-panel"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -671,6 +673,7 @@ export default function MenuPage() {
         {showLanguageModal && (
           <>
             <motion.div
+              key="lang-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -678,6 +681,7 @@ export default function MenuPage() {
               className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-5"
             />
             <motion.div
+              key="lang-panel"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -739,89 +743,6 @@ export default function MenuPage() {
           </>
         )}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function MenuItemCard({
-  item,
-  qty,
-  onAdd,
-  onRemove,
-}: {
-  item: CustomerMenuItem;
-  qty: number;
-  onAdd: () => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="bg-white rounded-2xl border border-black/8 flex items-center gap-3 p-3">
-      {item.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={item.imageUrl}
-          alt={item.name}
-          className="w-16 h-16 rounded-xl object-cover shrink-0 bg-cream-dark"
-        />
-      ) : (
-        <div className="w-16 h-16 rounded-xl bg-cream-dark flex items-center justify-center text-[28px] shrink-0">
-          {item.emoji ?? "🍽️"}
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-[14px] font-medium text-text-primary truncate">
-          {item.name}
-        </p>
-        <p className="text-[11px] text-text-muted mt-0.5 line-clamp-2 leading-snug">
-          {item.description || "No description"}
-        </p>
-      </div>
-      <div className="flex flex-col items-end gap-2 shrink-0">
-        <p className="text-[14px] font-medium text-clay-dark">฿{item.price}</p>
-        <AnimatePresence mode="wait">
-          {qty === 0 ? (
-            <motion.button
-              key="add"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.12 }}
-              onClick={onAdd}
-              className="w-7 h-7 bg-clay rounded-lg flex items-center justify-center active:bg-clay-dark"
-              aria-label="Add item"
-            >
-              <Plus className="w-3.5 h-3.5 text-white" />
-            </motion.button>
-          ) : (
-            <motion.div
-              key="qty"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              transition={{ duration: 0.12 }}
-              className="flex items-center gap-1.5 bg-clay-light rounded-lg px-1.5 py-1"
-            >
-              <button
-                onClick={onRemove}
-                className="w-5 h-5 bg-clay rounded-md flex items-center justify-center"
-                aria-label="Decrease quantity"
-              >
-                <Minus className="w-3 h-3 text-white" />
-              </button>
-              <span className="text-[13px] font-medium text-clay-dark w-4 text-center">
-                {qty}
-              </span>
-              <button
-                onClick={onAdd}
-                className="w-5 h-5 bg-clay rounded-md flex items-center justify-center"
-                aria-label="Increase quantity"
-              >
-                <Plus className="w-3 h-3 text-white" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
     </div>
   );
 }

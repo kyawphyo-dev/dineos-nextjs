@@ -11,7 +11,6 @@ import {
   Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import StatusBar from "@/components/shared/StatusBar";
 import { useCart } from "@/context/CartContext";
 import { useOrders } from "@/context/OrdersContext";
 import { useCustomerTableSession } from "@/app/(customer)/table/[id]/CustomerTableSessionProvider";
@@ -57,8 +56,6 @@ export default function CartPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-cream">
-      <StatusBar dark />
-
       <div className="bg-bark px-5 py-3 flex items-center gap-3">
         <button
           onClick={() => router.push(`/table/${tableId}/menu`)}
@@ -77,7 +74,7 @@ export default function CartPage() {
           <EmptyCart onBrowse={() => router.push(`/table/${tableId}/menu`)} />
         ) : (
           <div className="flex flex-col gap-2.5">
-            <AnimatePresence mode="popLayout">
+            <AnimatePresence>
               {cart.map((item) => (
                 <CartItemRow
                   key={item.id}
@@ -126,7 +123,6 @@ function CartItemRow({
 }) {
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}

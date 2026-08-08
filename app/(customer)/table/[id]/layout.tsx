@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import GetCustomerTableSession from "@/lib/actions/customer/GetCustomerTableSession.action";
-import NoDiningSessionView from "./NoDiningSessionView";
+import NoDiningSessionView from "../../../../components/customer/NoDiningSessionView";
 import CustomerTableSessionProvider from "./CustomerTableSessionProvider";
 
 export type Params = {
