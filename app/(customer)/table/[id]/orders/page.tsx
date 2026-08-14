@@ -1,12 +1,17 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { ChevronLeft, Plus, Receipt, Check, Flame } from "lucide-react";
+import {
+  ChevronLeft,
+  Plus,
+  Receipt,
+  Check,
+  Flame,
+  Utensils,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useMemo, useEffect } from "react";
-import StatusBar from "@/components/shared/StatusBar";
-import { useOrders } from "@/context/OrdersContext";
-import { useCustomerTableSession } from "@/app/(customer)/table/[id]/CustomerTableSessionProvider";
+import { useCustomerTableSession } from "@/context/CustomerTableSessionProvider";
 import type { CustomerOrder, CustomerOrderStatus } from "@/app/types/customer";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
@@ -15,17 +20,18 @@ const STATUS_STEPS: { key: CustomerOrderStatus; label: string }[] = [
   { key: "received", label: "Order received" },
   { key: "preparing", label: "Kitchen preparing" },
   { key: "ready", label: "Ready to serve" },
+  { key: "served", label: "Served" },
 ];
 
 const STATUS_INDEX: Record<CustomerOrderStatus, number> = {
+  pending: 0,
+  confirm: 0,
   received: 0,
   preparing: 1,
   ready: 2,
-  pending: 0,
-  confirm: 0,
-  served: 2,
-  completed: 2,
-  cancelled: 2,
+  served: 3,
+  completed: 3,
+  cancelled: 3,
 };
 
 function toCustomerOrderStatus(dbStatus: string): CustomerOrderStatus {
@@ -35,9 +41,14 @@ function toCustomerOrderStatus(dbStatus: string): CustomerOrderStatus {
       return "received";
     case "preparing":
       return "preparing";
-    case "served":
-    case "completed":
+    case "ready":
       return "ready";
+    case "served":
+      return "served";
+    case "completed":
+      return "served";
+    case "cancelled":
+      return "cancelled";
     default:
       return "received" as CustomerOrderStatus;
   }
@@ -59,20 +70,20 @@ function StatusBadge({ status }: { status: CustomerOrderStatus }) {
     received: "bg-clay-light text-clay-dark",
     preparing: "bg-gold-light text-[#9A6C10]",
     ready: "bg-sage-light text-sage",
+    served: "bg-sage text-white",
+    completed: "bg-sage text-white",
     pending: "bg-clay-light text-clay-dark",
     confirm: "bg-clay-light text-clay-dark",
-    served: "bg-sage-light text-sage",
-    completed: "bg-sage-light text-sage",
     cancelled: "bg-red-100 text-red-700",
   };
   const labels: Record<CustomerOrderStatus, string> = {
     received: "Received",
     preparing: "Preparing",
-    ready: "Ready",
+    ready: "Ready to serve",
+    served: "Served",
+    completed: "Served",
     pending: "Received",
     confirm: "Received",
-    served: "Served",
-    completed: "Completed",
     cancelled: "Cancelled",
   };
   return (
@@ -84,6 +95,30 @@ function StatusBadge({ status }: { status: CustomerOrderStatus }) {
   );
 }
 
+function StepDotIcon({
+  isDone,
+  isActive,
+  stepIndex,
+}: {
+  isDone: boolean;
+  isActive: boolean;
+  stepIndex: number;
+}) {
+  if (isDone) {
+    if (stepIndex === 3) {
+      return <Utensils className="w-2.5 h-2.5" />;
+    }
+    return <Check className="w-2.5 h-2.5" />;
+  }
+  if (isActive) {
+    if (stepIndex === 2) {
+      return <Utensils className="w-2.5 h-2.5" />;
+    }
+    return <Flame className="w-2.5 h-2.5" />;
+  }
+  return <span>{stepIndex + 1}</span>;
+}
+
 function OrderCard({ order }: { order: CustomerOrder }) {
   const statusKey = (
     order.status in STATUS_INDEX ? order.status : "received"
@@ -92,6 +127,44 @@ function OrderCard({ order }: { order: CustomerOrder }) {
   const total = order.items.reduce((s, i) => s + i.price * i.qty, 0);
   const estimatedMin = order.estimatedMin ?? 15;
   const placedLabel = formatPlacedAt(order.placedAt);
+
+  const dotClassFor = (i: number) => {
+    const isDone = i < currentStep;
+    const isActive = i === currentStep;
+    if (isDone) {
+      if (i === 3) return "bg-sage text-white";
+      if (i === 2) return "bg-sage text-white";
+      return "bg-clay text-white";
+    }
+    if (isActive) {
+      if (i === 2) return "bg-sage text-white";
+      if (i === 3) return "bg-sage text-white";
+      return "bg-gold text-white";
+    }
+    return "bg-cream-dark text-text-hint border-[1.5px] border-black/15";
+  };
+
+  const lineClassFor = (i: number) => {
+    if (i < currentStep) {
+      if (i >= 2) return "bg-sage/50";
+      return "bg-clay/40";
+    }
+    return "bg-black/10";
+  };
+
+  const subtitleFor = (
+    stepKey: CustomerOrderStatus,
+    isDone: boolean,
+    isActive: boolean,
+  ) => {
+    if (isDone) return placedLabel;
+    if (isActive) {
+      if (stepKey === "ready") return "Waiting for server";
+      if (stepKey === "served") return "Enjoy your meal";
+      return `In progress · ~${estimatedMin} min`;
+    }
+    return "Waiting…";
+  };
 
   return (
     <div className="bg-white rounded-2xl border border-black/8 p-4">
@@ -113,25 +186,17 @@ function OrderCard({ order }: { order: CustomerOrder }) {
                   initial={isActive ? { scale: 0.8 } : false}
                   animate={isActive ? { scale: [0.8, 1.1, 1] } : {}}
                   transition={{ duration: 0.4 }}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${
-                    isDone
-                      ? "bg-clay text-white"
-                      : isActive
-                        ? "bg-gold text-white"
-                        : "bg-cream-dark text-text-hint border-[1.5px] border-black/15"
-                  }`}
+                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${dotClassFor(i)}`}
                 >
-                  {isDone ? (
-                    <Check className="w-2.5 h-2.5" />
-                  ) : isActive ? (
-                    <Flame className="w-2.5 h-2.5" />
-                  ) : (
-                    <span>{i + 1}</span>
-                  )}
+                  <StepDotIcon
+                    isDone={isDone}
+                    isActive={isActive}
+                    stepIndex={i}
+                  />
                 </motion.div>
                 {!isLast && (
                   <div
-                    className={`w-px flex-1 my-0.5 min-h-5 ${isDone ? "bg-clay/40" : "bg-black/10"}`}
+                    className={`w-px flex-1 my-0.5 min-h-5 ${lineClassFor(i)}`}
                   />
                 )}
               </div>
@@ -140,11 +205,7 @@ function OrderCard({ order }: { order: CustomerOrder }) {
                   {step.label}
                 </p>
                 <p className="text-[11px] text-text-hint mt-0.5">
-                  {isDone
-                    ? placedLabel
-                    : isActive
-                      ? `In progress · ~${estimatedMin} min`
-                      : "Waiting…"}
+                  {subtitleFor(step.key, isDone, isActive)}
                 </p>
               </div>
             </div>
@@ -180,7 +241,6 @@ function OrderCard({ order }: { order: CustomerOrder }) {
 export default function OrdersPage() {
   const router = useRouter();
   const params = useParams();
-  const { orders: localOrders } = useOrders();
   const { orders: dbOrders, table } = useCustomerTableSession();
   const { tableId, setTableId } = useCart();
   const id = params.id as string;
@@ -191,39 +251,32 @@ export default function OrdersPage() {
 
   const displayTableNumber = table?.tableNumber ?? tableId ?? "—";
 
-  const normalizedDbOrders: CustomerOrder[] = useMemo(
+  const allOrders: CustomerOrder[] = useMemo(
     () =>
-      dbOrders.map((o) => ({
-        id: o.id,
-        tableId: table?.id ?? id,
-        status: toCustomerOrderStatus(o.status),
-        placedAt: o.placedAt,
-        estimatedMin: 15,
-        items: o.items.map((it) => ({
-          name: it.name,
-          qty: it.qty,
-          price: it.price,
-        })),
-      })),
+      dbOrders
+        .map((o) => ({
+          id: o.id,
+          tableId: table?.id ?? id,
+          status: toCustomerOrderStatus(o.status),
+          placedAt: o.placedAt,
+          estimatedMin: 15,
+          items: o.items.map((it) => ({
+            name: it.name,
+            qty: it.qty,
+            price: it.price,
+          })),
+        }))
+        .sort((a, b) => {
+          const ta = a.placedAt.includes("T")
+            ? new Date(a.placedAt).getTime()
+            : 0;
+          const tb = b.placedAt.includes("T")
+            ? new Date(b.placedAt).getTime()
+            : 0;
+          return tb - ta;
+        }),
     [dbOrders, table?.id, id],
   );
-
-  const allOrders = useMemo(() => {
-    const seen = new Set<string>();
-    const merged: CustomerOrder[] = [];
-    for (const o of normalizedDbOrders) {
-      merged.push(o);
-      seen.add(o.id);
-    }
-    for (const o of localOrders) {
-      if (!seen.has(o.id)) merged.push(o);
-    }
-    return merged.sort((a, b) => {
-      const ta = a.placedAt.includes("T") ? new Date(a.placedAt).getTime() : 0;
-      const tb = b.placedAt.includes("T") ? new Date(b.placedAt).getTime() : 0;
-      return tb - ta;
-    });
-  }, [normalizedDbOrders, localOrders]);
 
   const handleRequestBill = () => {
     toast.success("Bill requested");
@@ -231,8 +284,6 @@ export default function OrdersPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-cream">
-      <StatusBar dark />
-
       <div className="bg-bark px-5 py-3 flex items-center gap-3">
         <button
           onClick={() => router.push(`/table/${tableId}/menu`)}

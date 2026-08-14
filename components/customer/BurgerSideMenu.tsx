@@ -1,13 +1,72 @@
-import { motion } from "framer-motion";
-import React from "react";
+"use client";
 
-function SideMenu({
-  showBurger,
-  setShowBurger,
-}: {
+import { motion } from "framer-motion";
+import {
+  X,
+  Clock,
+  CreditCard,
+  Phone,
+  Receipt,
+  ShoppingCart,
+  ChevronRight,
+  Globe,
+  ChevronDown,
+} from "lucide-react";
+import { toast } from "sonner";
+import type {
+  CustomerRestaurantInfo,
+  CustomerBranchInfo,
+  CustomerTableInfo,
+} from "@/context/CustomerTableSessionProvider";
+import { LANGUAGES, type LanguageCode } from "./customerMenu.utils";
+
+type BurgerSideMenuProps = {
   showBurger: boolean;
   setShowBurger: (show: boolean) => void;
-}) {
+  restaurant: CustomerRestaurantInfo;
+  branch: CustomerBranchInfo;
+  table: CustomerTableInfo;
+  tableId: string | null;
+  sessionElapsed: string;
+  orderedItemCount: number;
+  orderedTotal: number;
+  categoryNames: string[];
+  activeCategory: string;
+  categoryCounts: Record<string, number>;
+  language: LanguageCode;
+  onCategoryChange: (category: string) => void;
+  setShowLanguageModal: (show: boolean) => void;
+  onMyOrdersClick: () => void;
+};
+
+function BurgerSideMenu({
+  showBurger: _showBurger,
+  setShowBurger,
+  restaurant,
+  branch,
+  table,
+  tableId,
+  sessionElapsed,
+  orderedItemCount,
+  orderedTotal,
+  categoryNames,
+  activeCategory,
+  categoryCounts,
+  language,
+  onCategoryChange,
+  setShowLanguageModal,
+  onMyOrdersClick,
+}: BurgerSideMenuProps) {
+  const handleCallStaff = () => {
+    toast.success("Staff has been notified");
+    setShowBurger(false);
+  };
+
+  const handleRequestBill = () => {
+    toast.success("Bill requested");
+    setShowBurger(false);
+  };
+
   return (
     <>
       <motion.div
@@ -106,7 +165,7 @@ function SideMenu({
           </button>
           <button
             onClick={() => {
-              router.push(`/table/${tableId}/orders`);
+              onMyOrdersClick();
               setShowBurger(false);
             }}
             className="w-full bg-cream-dark text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-between px-4 active:bg-cream-dark/80 transition-colors"
@@ -124,11 +183,11 @@ function SideMenu({
             Categories
           </p>
           <div className="flex flex-col gap-1.5">
-            {allCategoryNames.map((cat) => (
+            {categoryNames.map((cat) => (
               <button
                 key={cat}
                 onClick={() => {
-                  setActiveCategory(cat);
+                  onCategoryChange(cat);
                   setShowBurger(false);
                 }}
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-colors ${
@@ -175,4 +234,4 @@ function SideMenu({
   );
 }
 
-export default SideMenu;
+export default BurgerSideMenu;

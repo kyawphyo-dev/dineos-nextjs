@@ -1,7 +1,6 @@
 import type {
   CustomerPackage,
   CustomerMenuItem,
-  CustomerOrder,
 } from "@/app/types/customer";
 
 export const CUSTOMER_PACKAGES: CustomerPackage[] = [
@@ -82,19 +81,5 @@ export const CUSTOMER_MENU_ITEMS: CustomerMenuItem[] = [
     emoji: "🥭",
     category: "Desserts",
     dietary: ["Vegan", "Gluten-free"],
-  },
-];
-
-export const MOCK_CUSTOMER_ORDERS: CustomerOrder[] = [
-  {
-    id: "1032",
-    tableId: "demo-table",
-    status: "preparing",
-    placedAt: "9:44 AM",
-    estimatedMin: 8,
-    items: [
-      { name: "Massaman Curry", qty: 2, price: 180 },
-      { name: "Tom Yum Goong", qty: 1, price: 160 },
-    ],
   },
 ];
