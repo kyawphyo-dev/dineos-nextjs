@@ -5,7 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { ArrowRight, Package, QrCode, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCart } from "@/context/CartContext";
-import { useCustomerTableSession } from "./CustomerTableSessionProvider";
+import { useCustomerTableSession } from "../../../../context/CustomerTableSessionProvider";
 
 export default function LandingPage() {
   const router = useRouter();

@@ -1,5 +1,4 @@
 import { CartProvider } from "@/context/CartContext";
-import { OrdersProvider } from "@/context/OrdersContext";
 import PageTransition from "@/components/shared/PageTransition";
 
 // Customer-facing routes (landing, menu, cart, orders) are reached purely
@@ -7,9 +6,7 @@ import PageTransition from "@/components/shared/PageTransition";
 export default function CustomerLayout({ children }: { children: React.ReactNode }) {
   return (
     <CartProvider>
-      <OrdersProvider>
-        <PageTransition>{children}</PageTransition>
-      </OrdersProvider>
+      <PageTransition>{children}</PageTransition>
     </CartProvider>
   );
 }

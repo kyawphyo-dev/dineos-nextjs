@@ -364,7 +364,6 @@ enum ReservationStatus {
 
 enum OrderStatus {
   pending
-  confirm
   preparing
   served
   completed
