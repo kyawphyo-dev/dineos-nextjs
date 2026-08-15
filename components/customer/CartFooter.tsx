@@ -6,16 +6,29 @@ type CartFooterProps = {
   totalItems: number;
   totalPrice: number;
   onCartClick: () => void;
+  orderingDisabled?: boolean;
 };
 
 export function CartFooter({
   totalItems,
   totalPrice,
   onCartClick,
+  orderingDisabled,
 }: CartFooterProps) {
   return (
     <AnimatePresence>
-      {totalItems > 0 && (
+      {orderingDisabled ? (
+        <motion.div
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 80, opacity: 0 }}
+          className="sticky bottom-0 px-5 py-4 bg-gold-light border-t border-[#9A6C10]/20"
+        >
+          <div className="w-full bg-gold/80 text-white rounded-2xl py-3.5 text-[14px] font-medium flex items-center justify-center px-5">
+            Ordering disabled — bill requested
+          </div>
+        </motion.div>
+      ) : totalItems > 0 ? (
         <motion.div
           initial={{ y: 80, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -33,7 +46,7 @@ export function CartFooter({
             <span className="text-[15px] font-medium">฿{totalPrice}</span>
           </button>
         </motion.div>
-      )}
+      ) : null}
     </AnimatePresence>
   );
 }

@@ -52,13 +52,22 @@ export default async function PlaceOrder(params: PlaceOrderInput): Promise<{
   try {
     const table = await prisma.table.findUnique({
       where: { id: tableId },
-      select: { id: true, branchId: true, tableNumber: true },
+      select: { id: true, branchId: true, tableNumber: true, status: true },
     });
 
     if (!table) {
       return {
         success: false,
         message: "Table not found",
+        details: null,
+      };
+    }
+
+    if ((table.status as unknown) === "request_bill") {
+      return {
+        success: false,
+        message:
+          "Cannot place order when bill has been requested. Please cancel request bill to continue ordering.",
         details: null,
       };
     }

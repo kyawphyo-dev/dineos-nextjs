@@ -2,7 +2,9 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { Receipt, X, Loader2, Phone } from "lucide-react";
+import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
 import { useCustomerTableSession } from "@/context/CustomerTableSessionProvider";
 import type { CustomerMenuItem } from "@/app/types/customer";
@@ -18,9 +20,9 @@ import {
   pickEmoji,
   formatDuration,
   ALL_CATEGORY,
-  LANGUAGES,
   type LanguageCode,
 } from "@/components/customer/customerMenu.utils";
+import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
 
 export default function MenuPage() {
   const router = useRouter();
@@ -37,6 +39,7 @@ export default function MenuPage() {
   const { restaurant, branch, table, session, categories, orders } =
     useCustomerTableSession();
   const id = params.id as string;
+  const [isCancellingBill, setIsCancellingBill] = useState(false);
 
   useEffect(() => {
     if (id) setTableId(id);
@@ -56,7 +59,39 @@ export default function MenuPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleStatusChange = () => {
+    router.refresh();
+  };
+
+  const handleCancelRequestBill = async () => {
+    if (!tableId || isCancellingBill) return;
+    setIsCancellingBill(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "occupied",
+      });
+      if (res.success) {
+        toast.success("Request bill cancelled. You can continue ordering.");
+        router.refresh();
+      } else {
+        toast.error(res.message ?? "Failed to cancel request bill.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCancellingBill(false);
+    }
+  };
+
   const sessionElapsed = formatDuration(session.startedAt);
+
+  const isRequestBillActive = table.status === "request_bill";
+  const isNeedAttentionActive = table.status === "need_attention";
 
   const allCategoryNames = useMemo(
     () => [ALL_CATEGORY, ...categories.map((c) => c.name)],
@@ -141,6 +176,68 @@ export default function MenuPage() {
         onCartClick={handleCartClick}
       />
 
+      <AnimatePresence>
+        {isNeedAttentionActive && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-rose-light border-b border-rose/20 px-5 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-rose flex items-center justify-center shrink-0">
+                <Phone className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-rose">
+                  Staff has been notified
+                </p>
+                <p className="text-[11px] text-rose/70 mt-0.5">
+                  They will arrive at your table shortly
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isRequestBillActive && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-gold-light border-b border-[#9A6C10]/20 px-5 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#9A6C10] flex items-center justify-center shrink-0">
+                <Receipt className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-[#9A6C10]">
+                  Bill requested
+                </p>
+                <p className="text-[11px] text-[#9A6C10]/70 mt-0.5">
+                  Staff is preparing your bill. Ordering is disabled.
+                </p>
+              </div>
+              <button
+                onClick={handleCancelRequestBill}
+                disabled={isCancellingBill}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#9A6C10]/30 text-[12px] font-medium text-[#9A6C10] active:bg-[#9A6C10]/10 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {isCancellingBill ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <X className="w-3.5 h-3.5" />
+                )}
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <MenuSearchBar
         showSearch={showSearch}
         setShowSearch={setShowSearch}
@@ -162,12 +259,14 @@ export default function MenuPage() {
         getQty={getQty}
         addItem={addItem}
         removeItem={removeItem}
+        disabled={isRequestBillActive}
       />
 
       <CartFooter
         totalItems={totalItems}
         totalPrice={totalPrice}
         onCartClick={handleCartClick}
+        orderingDisabled={isRequestBillActive}
       />
 
       <AnimatePresence>
@@ -189,6 +288,7 @@ export default function MenuPage() {
             onCategoryChange={setActiveCategory}
             setShowLanguageModal={setShowLanguageModal}
             onMyOrdersClick={handleMyOrdersClick}
+            onStatusChange={handleStatusChange}
           />
         )}
       </AnimatePresence>

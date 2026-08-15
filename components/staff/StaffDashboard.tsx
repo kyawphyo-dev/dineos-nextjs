@@ -7,6 +7,8 @@ import TableCard from "@/components/staff/TableCard";
 import AvailableTablePanel from "@/components/staff/AvailableTablePanel";
 import QrHandoffCard from "@/components/staff/QrHandoffCard";
 import ReservationCard from "@/components/staff/ReservationCard";
+import NeedAttentionCard from "@/components/staff/NeedAttentionCard";
+import RequestBillCard from "@/components/staff/RequestBillCard";
 import type {
   CreateReservationInput,
   FrontTable,
@@ -21,6 +23,7 @@ import CreateReservation from "@/lib/actions/staff/CreateReservation.action";
 import CancelReservation from "@/lib/actions/staff/CancelReservation.action";
 import NoShowReservation from "@/lib/actions/staff/NoShowReservation.action";
 import SeatReservation from "@/lib/actions/staff/SeatReservation.action";
+import UpdateTableStatusStaff from "@/lib/actions/staff/UpdateTableStatusStaff.action";
 import StatusLegend from "./StatusLegend";
 
 interface TableWithZone extends Table {
@@ -72,7 +75,9 @@ export default function StaffDashboard({
       table.status === "available" ||
       table.status === "occupied" ||
       table.status === "attention" ||
-      table.status === "reserved"
+      table.status === "reserved" ||
+      table.status === "need_attention" ||
+      table.status === "request_bill"
         ? (table.status as FrontTable["status"])
         : "available";
     const frontTable: FrontTable = {
@@ -94,7 +99,11 @@ export default function StaffDashboard({
       meta:
         normalizedStatus === "reserved" && reservation?.reservedTime
           ? formatReservationTime(reservation.reservedTime)
-          : `${table.capacity} seats`,
+          : normalizedStatus === "need_attention"
+            ? "Needs attention"
+            : normalizedStatus === "request_bill"
+              ? "Request bill"
+              : `${table.capacity} seats`,
       session: diningSession
         ? {
             id: diningSession.id,
@@ -238,6 +247,52 @@ export default function StaffDashboard({
     }
   };
 
+  const handleResolveNeedAttention = async (tableNumber: string) => {
+    if (!branch?.id) return;
+
+    const table = realTables.find((t) => t.tableNumber === tableNumber);
+    if (!table) {
+      alert("Table not found");
+      return;
+    }
+
+    const result = await UpdateTableStatusStaff({
+      tableId: table.id,
+      status: "occupied",
+      branchId: branch.id,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to resolve need attention");
+    }
+  };
+
+  const handleCancelRequestBill = async (tableNumber: string) => {
+    if (!branch?.id) return;
+
+    const table = realTables.find((t) => t.tableNumber === tableNumber);
+    if (!table) {
+      alert("Table not found");
+      return;
+    }
+
+    const result = await UpdateTableStatusStaff({
+      tableId: table.id,
+      status: "occupied",
+      branchId: branch.id,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to cancel request bill");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-cream-dark relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-6">
@@ -256,7 +311,11 @@ export default function StaffDashboard({
               <Users className="w-3.5 h-3.5" />
               {
                 allTables.filter(
-                  (t) => t.status === "occupied" || t.status === "attention",
+                  (t) =>
+                    t.status === "occupied" ||
+                    t.status === "attention" ||
+                    t.status === "need_attention" ||
+                    t.status === "request_bill",
                 ).length
               }{" "}
               active
@@ -279,7 +338,11 @@ export default function StaffDashboard({
               <Users className="w-3.5 h-3.5" />
               {
                 allTables.filter(
-                  (t) => t.status === "occupied" || t.status === "attention",
+                  (t) =>
+                    t.status === "occupied" ||
+                    t.status === "attention" ||
+                    t.status === "need_attention" ||
+                    t.status === "request_bill",
                 ).length
               }{" "}
               active
@@ -341,8 +404,20 @@ export default function StaffDashboard({
                   </button>
                 </div>
 
-                {selectedTable.status === "occupied" ||
-                selectedTable.status === "attention" ? (
+                {selectedTable.status === "need_attention" ? (
+                  <NeedAttentionCard
+                    table={selectedTable}
+                    onResolveNeedAttention={handleResolveNeedAttention}
+                    onCloseSession={handleClose}
+                  />
+                ) : selectedTable.status === "request_bill" ? (
+                  <RequestBillCard
+                    table={selectedTable}
+                    onCancelRequestBill={handleCancelRequestBill}
+                    onCloseSession={handleClose}
+                  />
+                ) : selectedTable.status === "occupied" ||
+                  selectedTable.status === "attention" ? (
                   <QrHandoffCard
                     table={selectedTable}
                     onCloseSession={handleClose}

@@ -4,6 +4,7 @@ import { createContext, useContext, type ReactNode } from "react";
 import type {
   CustomerTableCategory,
   CustomerTableOrder,
+  CustomerTableStatus,
 } from "@/lib/actions/customer/GetCustomerTableSession.action";
 
 export type CustomerAssignedPackage = {
@@ -28,6 +29,7 @@ export type CustomerTableInfo = {
   id: string;
   tableNumber: string;
   capacity: number;
+  status: CustomerTableStatus;
 };
 
 export type CustomerSessionInfo = {
