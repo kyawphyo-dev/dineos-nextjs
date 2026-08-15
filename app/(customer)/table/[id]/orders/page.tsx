@@ -1,242 +1,18 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import {
-  ChevronLeft,
-  Plus,
-  Receipt,
-  Check,
-  Flame,
-  Utensils,
-} from "lucide-react";
+import { ChevronLeft, Plus, Receipt, X, Phone, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import { useCustomerTableSession } from "@/context/CustomerTableSessionProvider";
-import type { CustomerOrder, CustomerOrderStatus } from "@/app/types/customer";
+import type { CustomerOrder } from "@/app/types/customer";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
-
-const STATUS_STEPS: { key: CustomerOrderStatus; label: string }[] = [
-  { key: "received", label: "Order received" },
-  { key: "preparing", label: "Kitchen preparing" },
-  { key: "ready", label: "Ready to serve" },
-  { key: "served", label: "Served" },
-];
-
-const STATUS_INDEX: Record<CustomerOrderStatus, number> = {
-  pending: 0,
-  confirm: 0,
-  received: 0,
-  preparing: 1,
-  ready: 2,
-  served: 3,
-  completed: 3,
-  cancelled: 3,
-};
-
-function toCustomerOrderStatus(dbStatus: string): CustomerOrderStatus {
-  switch (dbStatus) {
-    case "pending":
-    case "confirm":
-      return "received";
-    case "preparing":
-      return "preparing";
-    case "ready":
-      return "ready";
-    case "served":
-      return "served";
-    case "completed":
-      return "served";
-    case "cancelled":
-      return "cancelled";
-    default:
-      return "received" as CustomerOrderStatus;
-  }
-}
-
-function formatPlacedAt(value: string): string {
-  if (!value) return "Just now";
-  if (!value.includes("-") && !value.includes("T")) return value;
-  try {
-    const d = new Date(value);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  } catch {
-    return "Just now";
-  }
-}
-
-function StatusBadge({ status }: { status: CustomerOrderStatus }) {
-  const styles: Record<CustomerOrderStatus, string> = {
-    received: "bg-clay-light text-clay-dark",
-    preparing: "bg-gold-light text-[#9A6C10]",
-    ready: "bg-sage-light text-sage",
-    served: "bg-sage text-white",
-    completed: "bg-sage text-white",
-    pending: "bg-clay-light text-clay-dark",
-    confirm: "bg-clay-light text-clay-dark",
-    cancelled: "bg-red-100 text-red-700",
-  };
-  const labels: Record<CustomerOrderStatus, string> = {
-    received: "Received",
-    preparing: "Preparing",
-    ready: "Ready to serve",
-    served: "Served",
-    completed: "Served",
-    pending: "Received",
-    confirm: "Received",
-    cancelled: "Cancelled",
-  };
-  return (
-    <span
-      className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${styles[status]}`}
-    >
-      {labels[status]}
-    </span>
-  );
-}
-
-function StepDotIcon({
-  isDone,
-  isActive,
-  stepIndex,
-}: {
-  isDone: boolean;
-  isActive: boolean;
-  stepIndex: number;
-}) {
-  if (isDone) {
-    if (stepIndex === 3) {
-      return <Utensils className="w-2.5 h-2.5" />;
-    }
-    return <Check className="w-2.5 h-2.5" />;
-  }
-  if (isActive) {
-    if (stepIndex === 2) {
-      return <Utensils className="w-2.5 h-2.5" />;
-    }
-    return <Flame className="w-2.5 h-2.5" />;
-  }
-  return <span>{stepIndex + 1}</span>;
-}
-
-function OrderCard({ order }: { order: CustomerOrder }) {
-  const statusKey = (
-    order.status in STATUS_INDEX ? order.status : "received"
-  ) as CustomerOrderStatus;
-  const currentStep = STATUS_INDEX[statusKey] ?? 0;
-  const total = order.items.reduce((s, i) => s + i.price * i.qty, 0);
-  const estimatedMin = order.estimatedMin ?? 15;
-  const placedLabel = formatPlacedAt(order.placedAt);
-
-  const dotClassFor = (i: number) => {
-    const isDone = i < currentStep;
-    const isActive = i === currentStep;
-    if (isDone) {
-      if (i === 3) return "bg-sage text-white";
-      if (i === 2) return "bg-sage text-white";
-      return "bg-clay text-white";
-    }
-    if (isActive) {
-      if (i === 2) return "bg-sage text-white";
-      if (i === 3) return "bg-sage text-white";
-      return "bg-gold text-white";
-    }
-    return "bg-cream-dark text-text-hint border-[1.5px] border-black/15";
-  };
-
-  const lineClassFor = (i: number) => {
-    if (i < currentStep) {
-      if (i >= 2) return "bg-sage/50";
-      return "bg-clay/40";
-    }
-    return "bg-black/10";
-  };
-
-  const subtitleFor = (
-    stepKey: CustomerOrderStatus,
-    isDone: boolean,
-    isActive: boolean,
-  ) => {
-    if (isDone) return placedLabel;
-    if (isActive) {
-      if (stepKey === "ready") return "Waiting for server";
-      if (stepKey === "served") return "Enjoy your meal";
-      return `In progress · ~${estimatedMin} min`;
-    }
-    return "Waiting…";
-  };
-
-  return (
-    <div className="bg-white rounded-2xl border border-black/8 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-[12px] text-text-hint">Order #{order.id}</span>
-        <StatusBadge status={statusKey} />
-      </div>
-
-      <div className="flex flex-col gap-0 mb-4">
-        {STATUS_STEPS.map((step, i) => {
-          const isDone = i < currentStep;
-          const isActive = i === currentStep;
-          const isLast = i === STATUS_STEPS.length - 1;
-
-          return (
-            <div key={step.key} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <motion.div
-                  initial={isActive ? { scale: 0.8 } : false}
-                  animate={isActive ? { scale: [0.8, 1.1, 1] } : {}}
-                  transition={{ duration: 0.4 }}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${dotClassFor(i)}`}
-                >
-                  <StepDotIcon
-                    isDone={isDone}
-                    isActive={isActive}
-                    stepIndex={i}
-                  />
-                </motion.div>
-                {!isLast && (
-                  <div
-                    className={`w-px flex-1 my-0.5 min-h-5 ${lineClassFor(i)}`}
-                  />
-                )}
-              </div>
-              <div className="pb-4">
-                <p className="text-[13px] font-medium text-text-primary">
-                  {step.label}
-                </p>
-                <p className="text-[11px] text-text-hint mt-0.5">
-                  {subtitleFor(step.key, isDone, isActive)}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="border-t border-black/8 pt-3 flex flex-col gap-2">
-        {order.items.map((item, i) => (
-          <div key={i} className="flex items-start justify-between">
-            <div>
-              <p className="text-[13px] text-text-primary">{item.name}</p>
-              <p className="text-[12px] text-text-hint">× {item.qty}</p>
-            </div>
-            <p className="text-[13px] font-medium text-clay-dark">
-              ฿{item.price * item.qty}
-            </p>
-          </div>
-        ))}
-        <div className="border-t border-black/8 pt-2.5 mt-1 flex justify-between items-center">
-          <span className="text-[13px] font-medium text-text-muted">
-            Order total
-          </span>
-          <span className="text-[16px] font-medium text-clay-dark">
-            ฿{total}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
+import {
+  OrderCard,
+  toCustomerOrderStatus,
+} from "@/components/customer/OrderCard";
+import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -244,6 +20,11 @@ export default function OrdersPage() {
   const { orders: dbOrders, table } = useCustomerTableSession();
   const { tableId, setTableId } = useCart();
   const id = params.id as string;
+
+  const [isCallingStaff, setIsCallingStaff] = useState(false);
+  const [isCancellingStaff, setIsCancellingStaff] = useState(false);
+  const [isRequestingBill, setIsRequestingBill] = useState(false);
+  const [isCancellingBill, setIsCancellingBill] = useState(false);
 
   useEffect(() => {
     if (id) setTableId(id);
@@ -278,8 +59,107 @@ export default function OrdersPage() {
     [dbOrders, table?.id, id],
   );
 
-  const handleRequestBill = () => {
-    toast.success("Bill requested");
+  const isRequestBillActive = table?.status === "request_bill";
+  const isNeedAttentionActive = table?.status === "need_attention";
+
+  const handleCallStaff = async () => {
+    if (!tableId || isCallingStaff) return;
+    setIsCallingStaff(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "need_attention",
+      });
+      if (res.success) {
+        toast.success("Staff has been notified!");
+        router.refresh();
+      } else {
+        toast.error(res.message ?? "Failed to call staff. Please try again.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCallingStaff(false);
+    }
+  };
+
+  const handleCancelCallStaff = async () => {
+    if (!tableId || isCancellingStaff) return;
+    setIsCancellingStaff(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "occupied",
+      });
+      if (res.success) {
+        toast.success("Call staff cancelled.");
+        router.refresh();
+      } else {
+        toast.error(res.message ?? "Failed to cancel call staff.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCancellingStaff(false);
+    }
+  };
+
+  const handleRequestBill = async () => {
+    if (!tableId || isRequestingBill) return;
+    setIsRequestingBill(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "request_bill",
+      });
+      if (res.success) {
+        toast.success("Bill requested! Staff will come to your table shortly.");
+        router.refresh();
+      } else {
+        toast.error(res.message ?? "Failed to request bill. Please try again.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsRequestingBill(false);
+    }
+  };
+
+  const handleCancelRequestBill = async () => {
+    if (!tableId || isCancellingBill) return;
+    setIsCancellingBill(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "occupied",
+      });
+      if (res.success) {
+        toast.success("Request bill cancelled. You can continue ordering.");
+        router.refresh();
+      } else {
+        toast.error(res.message ?? "Failed to cancel request bill.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCancellingBill(false);
+    }
   };
 
   return (
@@ -309,6 +189,44 @@ export default function OrdersPage() {
       </div>
 
       <div className="px-5 py-4 flex flex-col gap-2.5 border-t border-black/8 bg-cream">
+        {isNeedAttentionActive ? (
+          <div className="flex flex-col gap-2">
+            <div className="bg-rose-light rounded-2xl p-3.5 text-center">
+              <p className="text-[13px] font-medium text-rose">
+                <Phone className="w-4 h-4 inline mr-1.5" />
+                Staff has been notified. They will arrive shortly.
+              </p>
+            </div>
+            <motion.button
+              whileTap={!isCancellingStaff ? { scale: 0.97 } : {}}
+              onClick={handleCancelCallStaff}
+              disabled={isCancellingStaff}
+              className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isCancellingStaff ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <X className="w-4 h-4" />
+              )}
+              {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
+            </motion.button>
+          </div>
+        ) : (
+          <motion.button
+            whileTap={!isCallingStaff ? { scale: 0.97 } : {}}
+            onClick={handleCallStaff}
+            disabled={isCallingStaff}
+            className="w-full bg-white border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isCallingStaff ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Phone className="w-4 h-4" />
+            )}
+            {isCallingStaff ? "Calling…" : "Call staff"}
+          </motion.button>
+        )}
+
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => router.push(`/table/${tableId}/menu`)}
@@ -317,14 +235,44 @@ export default function OrdersPage() {
           <Plus className="w-4 h-4" />
           Order more
         </motion.button>
-        <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={handleRequestBill}
-          className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors"
-        >
-          <Receipt className="w-4 h-4" />
-          Request bill
-        </motion.button>
+
+        {isRequestBillActive ? (
+          <div className="flex flex-col gap-2">
+            <div className="bg-gold-light rounded-2xl p-3.5 text-center">
+              <p className="text-[13px] font-medium text-[#9A6C10]">
+                <Receipt className="w-4 h-4 inline mr-1.5" />
+                Bill requested. Staff is preparing your bill.
+              </p>
+            </div>
+            <motion.button
+              whileTap={!isCancellingBill ? { scale: 0.97 } : {}}
+              onClick={handleCancelRequestBill}
+              disabled={isCancellingBill}
+              className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isCancellingBill ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <X className="w-4 h-4" />
+              )}
+              {isCancellingBill ? "Cancelling…" : "Cancel request bill"}
+            </motion.button>
+          </div>
+        ) : (
+          <motion.button
+            whileTap={!isRequestingBill ? { scale: 0.97 } : {}}
+            onClick={handleRequestBill}
+            disabled={isRequestingBill}
+            className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {isRequestingBill ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Receipt className="w-4 h-4" />
+            )}
+            {isRequestingBill ? "Requesting…" : "Request bill"}
+          </motion.button>
+        )}
       </div>
     </div>
   );

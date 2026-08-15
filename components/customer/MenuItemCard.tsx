@@ -7,14 +7,20 @@ export function MenuItemCard({
   qty,
   onAdd,
   onRemove,
+  disabled,
 }: {
   item: CustomerMenuItem;
   qty: number;
   onAdd: () => void;
   onRemove: () => void;
+  disabled?: boolean;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-black/8 flex items-center gap-3 p-3">
+    <div
+      className={`bg-white rounded-2xl border border-black/8 flex items-center gap-3 p-3 ${
+        disabled ? "opacity-60" : ""
+      }`}
+    >
       {item.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -46,7 +52,12 @@ export function MenuItemCard({
               exit={{ scale: 0.8, opacity: 0 }}
               transition={{ duration: 0.12 }}
               onClick={onAdd}
-              className="w-7 h-7 bg-clay rounded-lg flex items-center justify-center active:bg-clay-dark"
+              disabled={disabled}
+              className={`w-7 h-7 rounded-lg flex items-center justify-center ${
+                disabled
+                  ? "bg-text-hint cursor-not-allowed"
+                  : "bg-clay active:bg-clay-dark"
+              }`}
               aria-label="Add item"
             >
               <Plus className="w-3.5 h-3.5 text-white" />
@@ -62,7 +73,12 @@ export function MenuItemCard({
             >
               <button
                 onClick={onRemove}
-                className="w-5 h-5 bg-clay rounded-md flex items-center justify-center"
+                disabled={disabled}
+                className={`w-5 h-5 rounded-md flex items-center justify-center ${
+                  disabled
+                    ? "bg-text-hint cursor-not-allowed"
+                    : "bg-clay"
+                }`}
                 aria-label="Decrease quantity"
               >
                 <Minus className="w-3 h-3 text-white" />
@@ -72,7 +88,12 @@ export function MenuItemCard({
               </span>
               <button
                 onClick={onAdd}
-                className="w-5 h-5 bg-clay rounded-md flex items-center justify-center"
+                disabled={disabled}
+                className={`w-5 h-5 rounded-md flex items-center justify-center ${
+                  disabled
+                    ? "bg-text-hint cursor-not-allowed"
+                    : "bg-clay"
+                }`}
                 aria-label="Increase quantity"
               >
                 <Plus className="w-3 h-3 text-white" />

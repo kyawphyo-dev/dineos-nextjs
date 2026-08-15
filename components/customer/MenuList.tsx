@@ -11,6 +11,7 @@ type MenuListProps = {
   getQty: (itemId: string) => number;
   addItem: (item: CustomerMenuItem) => void;
   removeItem: (item: CustomerMenuItem) => void;
+  disabled?: boolean;
 };
 
 export function MenuList({
@@ -19,6 +20,7 @@ export function MenuList({
   getQty,
   addItem,
   removeItem,
+  disabled,
 }: MenuListProps) {
   if (menuItems.length === 0) {
     return (
@@ -55,6 +57,7 @@ export function MenuList({
                 qty={getQty(item.id)}
                 onAdd={() => addItem(item)}
                 onRemove={() => removeItem(item)}
+                disabled={disabled}
               />
             </motion.div>
           ))}

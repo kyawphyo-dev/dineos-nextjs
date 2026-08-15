@@ -11,14 +11,17 @@ import {
   ChevronRight,
   Globe,
   ChevronDown,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useState } from "react";
 import type {
   CustomerRestaurantInfo,
   CustomerBranchInfo,
   CustomerTableInfo,
 } from "@/context/CustomerTableSessionProvider";
 import { LANGUAGES, type LanguageCode } from "./customerMenu.utils";
+import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
 
 type BurgerSideMenuProps = {
   showBurger: boolean;
@@ -37,6 +40,7 @@ type BurgerSideMenuProps = {
   onCategoryChange: (category: string) => void;
   setShowLanguageModal: (show: boolean) => void;
   onMyOrdersClick: () => void;
+  onStatusChange?: () => void;
 };
 
 function BurgerSideMenu({
@@ -56,16 +60,119 @@ function BurgerSideMenu({
   onCategoryChange,
   setShowLanguageModal,
   onMyOrdersClick,
+  onStatusChange,
 }: BurgerSideMenuProps) {
-  const handleCallStaff = () => {
-    toast.success("Staff has been notified");
-    setShowBurger(false);
+  const [isCallingStaff, setIsCallingStaff] = useState(false);
+  const [isCancellingStaff, setIsCancellingStaff] = useState(false);
+  const [isRequestingBill, setIsRequestingBill] = useState(false);
+  const [isCancellingBill, setIsCancellingBill] = useState(false);
+
+  const handleCallStaff = async () => {
+    if (!tableId || isCallingStaff) return;
+    setIsCallingStaff(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "need_attention",
+      });
+      if (res.success) {
+        toast.success("Staff has been notified!");
+        setShowBurger(false);
+        onStatusChange?.();
+      } else {
+        toast.error(res.message ?? "Failed to call staff. Please try again.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCallingStaff(false);
+    }
   };
 
-  const handleRequestBill = () => {
-    toast.success("Bill requested");
-    setShowBurger(false);
+  const handleCancelCallStaff = async () => {
+    if (!tableId || isCancellingStaff) return;
+    setIsCancellingStaff(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "occupied",
+      });
+      if (res.success) {
+        toast.success("Call staff cancelled.");
+        setShowBurger(false);
+        onStatusChange?.();
+      } else {
+        toast.error(res.message ?? "Failed to cancel call staff.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCancellingStaff(false);
+    }
   };
+
+  const handleRequestBill = async () => {
+    if (!tableId || isRequestingBill) return;
+    setIsRequestingBill(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "request_bill",
+      });
+      if (res.success) {
+        toast.success("Bill requested! Staff will come to your table shortly.");
+        setShowBurger(false);
+        onStatusChange?.();
+      } else {
+        toast.error(res.message ?? "Failed to request bill. Please try again.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsRequestingBill(false);
+    }
+  };
+
+  const handleCancelRequestBill = async () => {
+    if (!tableId || isCancellingBill) return;
+    setIsCancellingBill(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "occupied",
+      });
+      if (res.success) {
+        toast.success("Request bill cancelled. You can continue ordering.");
+        setShowBurger(false);
+        onStatusChange?.();
+      } else {
+        toast.error(res.message ?? "Failed to cancel request bill.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCancellingBill(false);
+    }
+  };
+
+  const isRequestBillActive = table.status === "request_bill";
+  const isNeedAttentionActive = table.status === "need_attention";
 
   return (
     <>
@@ -149,20 +256,78 @@ function BurgerSideMenu({
         </div>
 
         <div className="px-5 py-4 flex flex-col gap-2.5 border-b border-black/8">
-          <button
-            onClick={handleCallStaff}
-            className="w-full bg-white border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors"
-          >
-            <Phone className="w-4 h-4" />
-            Call staff
-          </button>
-          <button
-            onClick={handleRequestBill}
-            className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors"
-          >
-            <Receipt className="w-4 h-4" />
-            Request bill
-          </button>
+          {isNeedAttentionActive ? (
+            <div className="flex flex-col gap-2">
+              <div className="bg-rose-light rounded-2xl p-3.5 text-center">
+                <p className="text-[13px] font-medium text-rose">
+                  <Phone className="w-4 h-4 inline mr-1.5" />
+                  Staff has been notified. They will arrive shortly.
+                </p>
+              </div>
+              <button
+                onClick={handleCancelCallStaff}
+                disabled={isCancellingStaff}
+                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isCancellingStaff ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <X className="w-4 h-4" />
+                )}
+                {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleCallStaff}
+              disabled={isCallingStaff}
+              className="w-full bg-white border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isCallingStaff ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Phone className="w-4 h-4" />
+              )}
+              {isCallingStaff ? "Calling…" : "Call staff"}
+            </button>
+          )}
+
+          {isRequestBillActive ? (
+            <div className="flex flex-col gap-2">
+              <div className="bg-gold-light rounded-2xl p-3.5 text-center">
+                <p className="text-[13px] font-medium text-[#9A6C10]">
+                  <Receipt className="w-4 h-4 inline mr-1.5" />
+                  Bill requested. Staff is preparing your bill.
+                </p>
+              </div>
+              <button
+                onClick={handleCancelRequestBill}
+                disabled={isCancellingBill}
+                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isCancellingBill ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <X className="w-4 h-4" />
+                )}
+                {isCancellingBill ? "Cancelling…" : "Cancel request bill"}
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleRequestBill}
+              disabled={isRequestingBill}
+              className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isRequestingBill ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Receipt className="w-4 h-4" />
+              )}
+              {isRequestingBill ? "Requesting…" : "Request bill"}
+            </button>
+          )}
+
           <button
             onClick={() => {
               onMyOrdersClick();

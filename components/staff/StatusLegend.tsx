@@ -2,6 +2,7 @@ const LEGEND_ITEMS = [
   { label: "Available", color: "bg-sage" },
   { label: "Occupied", color: "bg-gold" },
   { label: "Needs attention", color: "bg-rose" },
+  { label: "Request bill", color: "bg-purple-500" },
   { label: "Reserved", color: "bg-text-hint" },
 ];
 

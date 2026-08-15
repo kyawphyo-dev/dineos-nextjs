@@ -42,6 +42,15 @@ export type CustomerTableOrder = {
   items: CustomerTableOrderItem[];
 };
 
+export type CustomerTableStatus =
+  | "available"
+  | "reserved"
+  | "occupied"
+  | "need_attention"
+  | "request_bill"
+  | "cleaning"
+  | "maintenance";
+
 export type CustomerTableSessionResult = {
   restaurant: {
     id: string;
@@ -56,6 +65,7 @@ export type CustomerTableSessionResult = {
     id: string;
     tableNumber: string;
     capacity: number;
+    status: CustomerTableStatus;
   };
   session: {
     id: string;
@@ -91,7 +101,11 @@ export default async function GetCustomerTableSession(params: {
   try {
     const table = await prisma.table.findUnique({
       where: { id: tableIdentifier },
-      include: {
+      select: {
+        id: true,
+        tableNumber: true,
+        capacity: true,
+        status: true,
         branch: {
           include: {
             restaurant: true,
@@ -238,6 +252,7 @@ export default async function GetCustomerTableSession(params: {
         id: table.id,
         tableNumber: table.tableNumber,
         capacity: table.capacity,
+        status: table.status as CustomerTableStatus,
       },
       session: session
         ? {

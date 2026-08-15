@@ -2,10 +2,11 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ShoppingBag, Loader2 } from "lucide-react";
+import { ChevronLeft, ShoppingBag, Loader2, Receipt, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import PlaceOrderAction from "@/lib/actions/customer/PlaceOrder.action";
+import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
 import { useCart } from "@/context/CartContext";
 import { useCustomerTableSession } from "@/context/CustomerTableSessionProvider";
 import type { CustomerOrder } from "@/app/types/customer";
@@ -27,6 +28,7 @@ export default function CartPage() {
   const { table } = useCustomerTableSession();
   const id = params.id as string;
   const [isPlacing, setIsPlacing] = useState(false);
+  const [isCancellingBill, setIsCancellingBill] = useState(false);
 
   useEffect(() => {
     if (id) setTableId(id);
@@ -71,7 +73,33 @@ export default function CartPage() {
     }
   };
 
+  const handleCancelRequestBill = async () => {
+    if (!tableId || isCancellingBill) return;
+    setIsCancellingBill(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "occupied",
+      });
+      if (res.success) {
+        toast.success("Request bill cancelled. You can continue ordering.");
+        router.refresh();
+      } else {
+        toast.error(res.message ?? "Failed to cancel request bill.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCancellingBill(false);
+    }
+  };
+
   const displayTableNumber = table?.tableNumber ?? tableId ?? "—";
+  const isRequestBillActive = table?.status === "request_bill";
 
   return (
     <div className="flex flex-col min-h-screen bg-cream">
@@ -109,32 +137,74 @@ export default function CartPage() {
 
       {cart.length > 0 && (
         <div className="px-5 py-4 border-t border-black/8 bg-cream">
-          <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-[13px] font-medium text-text-muted">
-              Subtotal
-            </span>
-            <span className="text-[18px] font-medium text-clay-dark">
-              ฿{totalPrice}
-            </span>
-          </div>
-          <motion.button
-            whileTap={!isPlacing ? { scale: 0.97 } : {}}
-            onClick={handlePlaceOrder}
-            disabled={isPlacing}
-            className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isPlacing ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Placing order…
-              </>
-            ) : (
-              <>
-                <ShoppingBag className="w-4 h-4" />
-                Place order
-              </>
-            )}
-          </motion.button>
+          {isRequestBillActive ? (
+            <div className="flex flex-col gap-3">
+              <div className="bg-gold-light rounded-2xl p-4 text-center">
+                <Receipt className="w-6 h-6 text-[#9A6C10] mx-auto mb-2" />
+                <p className="text-[14px] font-medium text-[#9A6C10]">
+                  Bill requested
+                </p>
+                <p className="text-[11px] text-[#9A6C10]/70 mt-1">
+                  Ordering is disabled. Staff is preparing your bill.
+                </p>
+              </div>
+              <div className="flex items-center justify-between mb-1 px-1">
+                <span className="text-[13px] font-medium text-text-muted">
+                  Subtotal
+                </span>
+                <span className="text-[18px] font-medium text-clay-dark">
+                  ฿{totalPrice}
+                </span>
+              </div>
+              <motion.button
+                whileTap={!isCancellingBill ? { scale: 0.97 } : {}}
+                onClick={handleCancelRequestBill}
+                disabled={isCancellingBill}
+                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isCancellingBill ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Cancelling…
+                  </>
+                ) : (
+                  <>
+                    <X className="w-4 h-4" />
+                    Cancel request bill to place order
+                  </>
+                )}
+              </motion.button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <span className="text-[13px] font-medium text-text-muted">
+                  Subtotal
+                </span>
+                <span className="text-[18px] font-medium text-clay-dark">
+                  ฿{totalPrice}
+                </span>
+              </div>
+              <motion.button
+                whileTap={!isPlacing ? { scale: 0.97 } : {}}
+                onClick={handlePlaceOrder}
+                disabled={isPlacing}
+                className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isPlacing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Placing order…
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="w-4 h-4" />
+                    Place order
+                  </>
+                )}
+              </motion.button>
+            </>
+          )}
         </div>
       )}
     </div>

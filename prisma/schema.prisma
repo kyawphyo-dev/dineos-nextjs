@@ -379,17 +379,13 @@ enum StaffRole {
 }
 
 enum TableStatus {
-
-available
-
-reserved
-
-occupied
-
-cleaning
-
-maintenance
-
+  available
+  reserved
+  occupied
+  need_attention
+  request_bill
+  cleaning
+  maintenance
 }
 
 enum BillStatus {
