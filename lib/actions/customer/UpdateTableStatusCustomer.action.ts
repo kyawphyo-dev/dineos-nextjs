@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { errorAction } from "@/lib/response";
 import UpdateTableStatusSchema from "@/lib/schemas/UpdateTableStatusSchema";
@@ -73,6 +74,8 @@ async function UpdateTableStatusCustomer(
       data: { status: status as any },
       select: { id: true, status: true },
     });
+
+    revalidatePath("/(customer)/table/[id]", "layout");
 
     return {
       success: true,

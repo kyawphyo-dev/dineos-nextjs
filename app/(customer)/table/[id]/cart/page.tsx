@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { ChevronLeft, ShoppingBag, Loader2, Receipt, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -25,10 +25,11 @@ export default function CartPage() {
     clearCart,
     setTableId,
   } = useCart();
-  const { table } = useCustomerTableSession();
+  const { table, orders } = useCustomerTableSession();
   const id = params.id as string;
   const [isPlacing, setIsPlacing] = useState(false);
   const [isCancellingBill, setIsCancellingBill] = useState(false);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     if (id) setTableId(id);
@@ -60,8 +61,9 @@ export default function CartPage() {
 
       clearCart();
       toast.success("Order placed successfully!");
-      router.refresh();
-      router.push(`/table/${tableId}/orders`);
+      startTransition(() => {
+        router.push(`/table/${tableId}/orders`);
+      });
     } catch (err) {
       toast.error(
         err instanceof Error
@@ -83,7 +85,9 @@ export default function CartPage() {
       });
       if (res.success) {
         toast.success("Request bill cancelled. You can continue ordering.");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         toast.error(res.message ?? "Failed to cancel request bill.");
       }
@@ -116,9 +120,25 @@ export default function CartPage() {
         </span>
       </div>
 
-      <div className="flex-1 px-5 py-4">
+      <div className="flex-1 px-5 py-4 flex flex-col gap-3">
         {cart.length === 0 ? (
-          <EmptyCart onBrowse={() => router.push(`/table/${tableId}/menu`)} />
+          <>
+            <EmptyCart onBrowse={() => router.push(`/table/${tableId}/menu`)} />
+            {orders.length > 0 && (
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() =>
+                  startTransition(() => {
+                    router.push(`/table/${tableId}/orders`);
+                  })
+                }
+                className="w-full border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors"
+              >
+                <Receipt className="w-4 h-4" />
+                View my orders
+              </motion.button>
+            )}
+          </>
         ) : (
           <div className="flex flex-col gap-2.5">
             <AnimatePresence>
@@ -136,7 +156,21 @@ export default function CartPage() {
       </div>
 
       {cart.length > 0 && (
-        <div className="px-5 py-4 border-t border-black/8 bg-cream">
+        <div className="px-5 py-4 border-t border-black/8 bg-cream flex flex-col gap-2.5">
+          {orders.length > 0 && (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() =>
+                startTransition(() => {
+                  router.push(`/table/${tableId}/orders`);
+                })
+              }
+              className="w-full border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors"
+            >
+              <Receipt className="w-4 h-4" />
+              View my orders
+            </motion.button>
+          )}
           {isRequestBillActive ? (
             <div className="flex flex-col gap-3">
               <div className="bg-gold-light rounded-2xl p-4 text-center">

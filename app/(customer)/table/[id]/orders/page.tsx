@@ -3,7 +3,7 @@
 import { useRouter, useParams } from "next/navigation";
 import { ChevronLeft, Plus, Receipt, X, Phone, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useTransition } from "react";
 import { useCustomerTableSession } from "@/context/CustomerTableSessionProvider";
 import type { CustomerOrder } from "@/app/types/customer";
 import { useCart } from "@/context/CartContext";
@@ -25,6 +25,7 @@ export default function OrdersPage() {
   const [isCancellingStaff, setIsCancellingStaff] = useState(false);
   const [isRequestingBill, setIsRequestingBill] = useState(false);
   const [isCancellingBill, setIsCancellingBill] = useState(false);
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     if (id) setTableId(id);
@@ -72,7 +73,9 @@ export default function OrdersPage() {
       });
       if (res.success) {
         toast.success("Staff has been notified!");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         toast.error(res.message ?? "Failed to call staff. Please try again.");
       }
@@ -97,7 +100,9 @@ export default function OrdersPage() {
       });
       if (res.success) {
         toast.success("Call staff cancelled.");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         toast.error(res.message ?? "Failed to cancel call staff.");
       }
@@ -122,7 +127,9 @@ export default function OrdersPage() {
       });
       if (res.success) {
         toast.success("Bill requested! Staff will come to your table shortly.");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         toast.error(res.message ?? "Failed to request bill. Please try again.");
       }
@@ -147,7 +154,9 @@ export default function OrdersPage() {
       });
       if (res.success) {
         toast.success("Request bill cancelled. You can continue ordering.");
-        router.refresh();
+        startTransition(() => {
+          router.refresh();
+        });
       } else {
         toast.error(res.message ?? "Failed to cancel request bill.");
       }

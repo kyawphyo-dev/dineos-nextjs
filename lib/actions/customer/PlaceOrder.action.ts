@@ -1,6 +1,7 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { errorAction } from "@/lib/response";
 import { serializePrisma } from "@/lib/serializer";
@@ -191,6 +192,8 @@ export default async function PlaceOrder(params: PlaceOrderInput): Promise<{
       createdAt: result.createdAt.toISOString(),
       items: resultItems,
     };
+
+    revalidatePath("/(customer)/table/[id]", "layout");
 
     return {
       success: true,
