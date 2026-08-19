@@ -62,6 +62,7 @@ export default function OrdersPage() {
 
   const isRequestBillActive = table?.status === "request_bill";
   const isNeedAttentionActive = table?.status === "need_attention";
+  const hasOrders = dbOrders.length > 0;
 
   const handleCallStaff = async () => {
     if (!tableId || isCallingStaff) return;
@@ -118,7 +119,7 @@ export default function OrdersPage() {
   };
 
   const handleRequestBill = async () => {
-    if (!tableId || isRequestingBill) return;
+    if (!tableId || isRequestingBill || !hasOrders) return;
     setIsRequestingBill(true);
     try {
       const res = await UpdateTableStatusCustomer({
@@ -269,9 +270,9 @@ export default function OrdersPage() {
           </div>
         ) : (
           <motion.button
-            whileTap={!isRequestingBill ? { scale: 0.97 } : {}}
+            whileTap={!isRequestingBill && hasOrders ? { scale: 0.97 } : {}}
             onClick={handleRequestBill}
-            disabled={isRequestingBill}
+            disabled={isRequestingBill || !hasOrders}
             className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
             {isRequestingBill ? (
@@ -279,7 +280,11 @@ export default function OrdersPage() {
             ) : (
               <Receipt className="w-4 h-4" />
             )}
-            {isRequestingBill ? "Requesting…" : "Request bill"}
+            {isRequestingBill
+              ? "Requesting…"
+              : !hasOrders
+                ? "No orders to bill"
+                : "Request bill"}
           </motion.button>
         )}
       </div>

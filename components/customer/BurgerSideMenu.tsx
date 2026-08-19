@@ -40,6 +40,7 @@ type BurgerSideMenuProps = {
   onCategoryChange: (category: string) => void;
   setShowLanguageModal: (show: boolean) => void;
   onMyOrdersClick: () => void;
+  hasOrders: boolean;
   onStatusChange?: () => void;
 };
 
@@ -60,6 +61,7 @@ function BurgerSideMenu({
   onCategoryChange,
   setShowLanguageModal,
   onMyOrdersClick,
+  hasOrders,
   onStatusChange,
 }: BurgerSideMenuProps) {
   const [isCallingStaff, setIsCallingStaff] = useState(false);
@@ -120,7 +122,7 @@ function BurgerSideMenu({
   };
 
   const handleRequestBill = async () => {
-    if (!tableId || isRequestingBill) return;
+    if (!tableId || isRequestingBill || !hasOrders) return;
     setIsRequestingBill(true);
     try {
       const res = await UpdateTableStatusCustomer({
@@ -316,7 +318,7 @@ function BurgerSideMenu({
           ) : (
             <button
               onClick={handleRequestBill}
-              disabled={isRequestingBill}
+              disabled={isRequestingBill || !hasOrders}
               className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isRequestingBill ? (
@@ -324,7 +326,11 @@ function BurgerSideMenu({
               ) : (
                 <Receipt className="w-4 h-4" />
               )}
-              {isRequestingBill ? "Requesting…" : "Request bill"}
+              {isRequestingBill
+                ? "Requesting…"
+                : !hasOrders
+                  ? "No orders to bill"
+                  : "Request bill"}
             </button>
           )}
 

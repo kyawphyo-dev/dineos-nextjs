@@ -5,15 +5,14 @@ import { prisma } from "@/lib/prisma";
 import { errorAction } from "@/lib/response";
 import UpdateTableStatusSchema from "@/lib/schemas/UpdateTableStatusSchema";
 
-export type TableStatus = {
-  available: "available";
-  reserved: "reserved";
-  occupied: "occupied";
-  need_attention: "need_attention";
-  request_bill: "request_bill";
-  cleaning: "cleaning";
-  maintenance: "need_attention";
-};
+export type TableStatus =
+  | "available"
+  | "reserved"
+  | "occupied"
+  | "need_attention"
+  | "request_bill"
+  | "cleaning"
+  | "maintenance";
 
 interface UpdateTableStatusCustomerParams {
   tableId: string;
