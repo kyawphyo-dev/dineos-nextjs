@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowRight, Package, QrCode, Users } from "lucide-react";
+import {
+  ArrowRight,
+  Package,
+  QrCode,
+  Users,
+  Phone,
+  X,
+  Loader2,
+  Bell,
+} from "lucide-react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { useCart } from "@/context/CartContext";
 import { useCustomerTableSession } from "../../../../context/CustomerTableSessionProvider";
+import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -13,10 +24,69 @@ export default function LandingPage() {
   const tableId = params.id as string;
   const { setTableId } = useCart();
   const { restaurant, branch, table, session } = useCustomerTableSession();
+  const [, startTransition] = useTransition();
+  const [isCallingStaff, setIsCallingStaff] = useState(false);
+  const [isCancellingStaff, setIsCancellingStaff] = useState(false);
+
+  const isNeedAttentionActive = table.status === "need_attention";
 
   useEffect(() => {
     setTableId(tableId);
   }, [tableId, setTableId]);
+
+  const handleCallStaff = async () => {
+    if (!tableId || isCallingStaff) return;
+    setIsCallingStaff(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "need_attention",
+      });
+      if (res.success) {
+        toast.success("Staff has been notified!");
+        startTransition(() => {
+          router.refresh();
+        });
+      } else {
+        toast.error(res.message ?? "Failed to call staff. Please try again.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCallingStaff(false);
+    }
+  };
+
+  const handleCancelCallStaff = async () => {
+    if (!tableId || isCancellingStaff) return;
+    setIsCancellingStaff(true);
+    try {
+      const res = await UpdateTableStatusCustomer({
+        tableId,
+        status: "occupied",
+      });
+      if (res.success) {
+        toast.success("Call staff cancelled.");
+        startTransition(() => {
+          router.refresh();
+        });
+      } else {
+        toast.error(res.message ?? "Failed to cancel call staff.");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setIsCancellingStaff(false);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-cream">
@@ -70,6 +140,62 @@ export default function LandingPage() {
         <div className="mt-3 flex items-center justify-center gap-1.5 text-[12px] text-text-hint">
           <Users className="w-3.5 h-3.5" />
           <span>{session.guestCount} guests at this table</span>
+        </div>
+
+        <div className="mt-6 bg-white rounded-2xl border border-black/10 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-clay-light flex items-center justify-center shrink-0">
+              <Bell className="w-5 h-5 text-clay-dark" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[15px] font-medium text-text-primary">
+                Need help?
+              </p>
+              <p className="text-[12px] text-text-muted mt-0.5">
+                Call staff to your table for assistance.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2.5">
+          {isNeedAttentionActive ? (
+            <div className="flex flex-col gap-2">
+              <div className="bg-rose-light rounded-2xl p-3.5 text-center">
+                <p className="text-[13px] font-medium text-rose">
+                  <Phone className="w-4 h-4 inline mr-1.5" />
+                  Staff has been notified. They will arrive shortly.
+                </p>
+              </div>
+              <motion.button
+                whileTap={!isCancellingStaff ? { scale: 0.97 } : {}}
+                onClick={handleCancelCallStaff}
+                disabled={isCancellingStaff}
+                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isCancellingStaff ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <X className="w-4 h-4" />
+                )}
+                {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
+              </motion.button>
+            </div>
+          ) : (
+            <motion.button
+              whileTap={!isCallingStaff ? { scale: 0.97 } : {}}
+              onClick={handleCallStaff}
+              disabled={isCallingStaff}
+              className="w-full bg-white border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isCallingStaff ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Phone className="w-4 h-4" />
+              )}
+              {isCallingStaff ? "Calling…" : "Call staff"}
+            </motion.button>
+          )}
         </div>
       </div>
     </div>

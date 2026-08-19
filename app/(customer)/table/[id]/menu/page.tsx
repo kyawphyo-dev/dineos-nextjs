@@ -288,6 +288,7 @@ export default function MenuPage() {
             onCategoryChange={setActiveCategory}
             setShowLanguageModal={setShowLanguageModal}
             onMyOrdersClick={handleMyOrdersClick}
+            hasOrders={orders.length > 0}
             onStatusChange={handleStatusChange}
           />
         )}
