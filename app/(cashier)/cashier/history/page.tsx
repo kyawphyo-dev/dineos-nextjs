@@ -7,12 +7,15 @@ import RouteGuard from "@/components/shared/RouteGuard";
 import HistoryRow from "@/components/cashier/HistoryRow";
 import Receipt from "@/components/cashier/Receipt";
 import DateFilter from "@/components/cashier/DateFilter";
-import { useSessions, toLocalISODate } from "@/context/SessionsContext";
+import {
+  useCashierSessions,
+  toLocalISODate,
+} from "@/context/CashierSessionContext";
 import { downloadReceiptAsPdf } from "@/lib/downloadReceipt";
 
 function HistoryDashboard() {
   const router = useRouter();
-  const { receipts } = useSessions();
+  const { receipts, restaurant } = useCashierSessions();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const todayISO = useMemo(() => toLocalISODate(new Date()), []);
@@ -26,7 +29,7 @@ function HistoryDashboard() {
 
   const filtered = useMemo(
     () => receipts.filter((r) => r.paidDateISO === dateFilter),
-    [receipts, dateFilter]
+    [receipts, dateFilter],
   );
   const sorted = [...filtered].reverse();
   const selected = sorted.find((r) => r.id === selectedId);
@@ -44,9 +47,13 @@ function HistoryDashboard() {
             <ChevronLeft className="w-4 h-4 text-text-muted" />
           </button>
           <div>
-            <h1 className="text-[18px] font-medium text-text-primary">Bill History</h1>
+            <h1 className="text-[18px] font-medium text-text-primary">
+              Bill History
+            </h1>
             <p className="text-[12px] text-text-muted mt-0.5">
-              {filtered.length} receipt{filtered.length !== 1 ? "s" : ""} · ฿{dayTotal.toLocaleString()} total
+              {restaurant.name} · {filtered.length} receipt
+              {filtered.length !== 1 ? "s" : ""} · ฿{dayTotal.toLocaleString()}{" "}
+              total
             </p>
           </div>
         </div>

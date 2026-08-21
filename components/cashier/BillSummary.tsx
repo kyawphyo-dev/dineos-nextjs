@@ -1,7 +1,7 @@
 "use client";
 
 import type { DiningSession, Discount } from "@/app/types/cashier";
-import { calculateBill } from "@/context/SessionsContext";
+import { calculateBill } from "@/context/CashierSessionContext";
 
 interface Props {
   session: DiningSession;
@@ -10,7 +10,10 @@ interface Props {
 
 export default function BillSummary({ session, discount }: Props) {
   const { subtotal, discountAmount, total } = calculateBill(session, discount);
-  const orderLabel = session.orderIds.length > 1 ? `Orders #${session.orderIds.join(", #")}` : `Order #${session.orderIds[0]}`;
+  const orderLabel =
+    session.orderIds.length > 1
+      ? `Orders #${session.orderIds.join(", #")}`
+      : `Order #${session.orderIds[0]}`;
 
   return (
     <div className="bg-white rounded-2xl border border-black/8 p-5">
@@ -39,7 +42,10 @@ export default function BillSummary({ session, discount }: Props) {
         </div>
         {discount && discountAmount > 0 && (
           <div className="flex justify-between text-[13px] text-rose">
-            <span>Discount {discount.type === "percent" ? `(${discount.value}%)` : "(fixed)"}</span>
+            <span>
+              Discount{" "}
+              {discount.type === "percent" ? `(${discount.value}%)` : "(fixed)"}
+            </span>
             <span>−฿{discountAmount.toLocaleString()}</span>
           </div>
         )}

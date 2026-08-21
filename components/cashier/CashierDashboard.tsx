@@ -10,7 +10,10 @@ import DiscountControls from "@/components/cashier/DiscountControls";
 import SplitBillPanel from "@/components/cashier/SplitBillPanel";
 import PaymentPanel from "@/components/cashier/PaymentPanel";
 import ReceiptConfirmation from "@/components/cashier/ReceiptConfirmation";
-import { useSessions, calculateBill } from "@/context/SessionsContext";
+import {
+  useCashierSessions,
+  calculateBill,
+} from "@/context/CashierSessionContext";
 import type {
   Discount,
   PaymentMethod,
@@ -21,11 +24,13 @@ export default function CashierDashboard() {
   const router = useRouter();
   const {
     sessions,
+    restaurant,
+    branch,
     getSession,
     recordPayment,
     closeSession,
     markFinishedEating,
-  } = useSessions();
+  } = useCashierSessions();
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [discount, setDiscount] = useState<Discount | null>(null);
   const [showSplit, setShowSplit] = useState(false);
@@ -74,7 +79,10 @@ export default function CashierDashboard() {
                 Cashier
               </h1>
               <p className="text-[12px] text-text-muted mt-0.5">
-                Baan Rim Naam · {sessions.length} active sessions
+                {restaurant.name}
+                {branch.name ? ` · ${branch.name}` : ""}
+                {" · "}
+                {sessions.length} active sessions
               </p>
             </div>
           </div>
