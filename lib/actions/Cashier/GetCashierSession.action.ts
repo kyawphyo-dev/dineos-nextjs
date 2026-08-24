@@ -25,6 +25,7 @@ export type CashierLineItem = {
 export type CashierSessionStatus = "dining" | "finished" | "billed";
 
 export type CashierDiningSession = {
+  sessionId: string;
   tableId: string;
   packageName: string;
   guestCount: number;
@@ -167,6 +168,7 @@ export default async function getCashierSession(): Promise<{
       );
 
       sessions.push({
+        sessionId: diningSession.id,
         tableId: table.tableNumber,
         packageName: diningSession.package?.name ?? "Walk-in",
         guestCount: diningSession.guestCount,

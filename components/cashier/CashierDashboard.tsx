@@ -27,9 +27,9 @@ export default function CashierDashboard() {
     restaurant,
     branch,
     getSession,
+    markFinishedEating,
     recordPayment,
     closeSession,
-    markFinishedEating,
   } = useCashierSessions();
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [discount, setDiscount] = useState<Discount | null>(null);
@@ -62,6 +62,10 @@ export default function CashierDashboard() {
     setPaidReceipt(null);
   };
 
+  const handleMarkFinishedEating = async (tableId: string) => {
+    await markFinishedEating(tableId);
+  };
+
   const billTotal = selectedSession
     ? calculateBill(selectedSession, discount).total
     : 0;
@@ -71,7 +75,7 @@ export default function CashierDashboard() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-bark flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-bark flex items-center justify-center shrink-0">
               <Wallet className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
@@ -110,7 +114,9 @@ export default function CashierDashboard() {
                   session={session}
                   selected={selectedTableId === session.tableId}
                   onClick={() => handleSelect(session.tableId)}
-                  onMarkFinished={() => markFinishedEating(session.tableId)}
+                  onMarkFinished={() =>
+                    handleMarkFinishedEating(session.tableId)
+                  }
                 />
               ))}
               {sessions.length === 0 && (

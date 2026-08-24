@@ -20,6 +20,7 @@ export type LineItem = {
 };
 
 export type DiningSession = {
+  sessionId: string;
   tableId: string;
   packageName: string;
   guestCount: number;

@@ -2,6 +2,7 @@ import type { DiningSession, ReceiptRecord } from "@/app/types/cashier";
 
 export const INITIAL_SESSIONS: DiningSession[] = [
   {
+    sessionId: "mock-session-1",
     tableId: "A-05",
     packageName: "Buffet Premier",
     guestCount: 4,
@@ -16,6 +17,7 @@ export const INITIAL_SESSIONS: DiningSession[] = [
     ],
   },
   {
+    sessionId: "mock-session-2",
     tableId: "A-02",
     packageName: "Buffet Premier",
     guestCount: 3,
@@ -27,6 +29,7 @@ export const INITIAL_SESSIONS: DiningSession[] = [
     ],
   },
   {
+    sessionId: "mock-session-3",
     tableId: "A-04",
     packageName: "Dine-in Set Menu",
     guestCount: 5,
@@ -38,6 +41,7 @@ export const INITIAL_SESSIONS: DiningSession[] = [
     ],
   },
   {
+    sessionId: "mock-session-4",
     tableId: "A-08",
     packageName: "Dine-in Set Menu",
     guestCount: 2,

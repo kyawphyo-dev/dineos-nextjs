@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useTransition,
+} from "react";
+import { useRouter } from "next/navigation";
 import { INITIAL_RECEIPTS } from "@/app/data/cashier-mock";
 import type {
   DiningSession,
@@ -9,13 +16,14 @@ import type {
   ReceiptRecord,
 } from "@/app/types/cashier";
 import type { CashierSessionResult } from "@/lib/actions/Cashier/GetCashierSession.action";
+import MarkFinishedEating from "@/lib/actions/Cashier/MarkFinishedEating.action";
 
 interface CashierSessionsContextValue extends CashierSessionResult {
   sessions: DiningSession[];
   receipts: ReceiptRecord[];
   getSession: (tableId: string) => DiningSession | undefined;
   getReceipt: (id: string) => ReceiptRecord | undefined;
-  markFinishedEating: (tableId: string) => void;
+  markFinishedEating: (tableId: string) => Promise<void>;
   recordPayment: (
     tableId: string,
     discount: Discount | null,
@@ -39,6 +47,8 @@ export default function CashierSessionProvider({
   initialReceipts?: ReceiptRecord[];
   children: ReactNode;
 }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [sessions, setSessions] = useState<DiningSession[]>(value.sessions);
   const [receipts, setReceipts] = useState<ReceiptRecord[]>(initialReceipts);
 
@@ -46,12 +56,30 @@ export default function CashierSessionProvider({
     sessions.find((s) => s.tableId === tableId);
   const getReceipt = (id: string) => receipts.find((r) => r.id === id);
 
-  const markFinishedEating = (tableId: string) => {
+  const markFinishedEating = async (tableId: string) => {
     setSessions((prev) =>
       prev.map((s) =>
         s.tableId === tableId ? { ...s, status: "finished" } : s,
       ),
     );
+
+    const result = await MarkFinishedEating({
+      tableNumber: tableId,
+      branchId: value.branch.id,
+    });
+
+    if (!result.success) {
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.tableId === tableId ? { ...s, status: "dining" } : s,
+        ),
+      );
+      return;
+    }
+
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
   const recordPayment = (

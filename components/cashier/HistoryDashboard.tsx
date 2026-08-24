@@ -14,7 +14,7 @@ import { downloadReceiptAsPdf } from "@/lib/downloadReceipt";
 
 export default function HistoryDashboard() {
   const router = useRouter();
-  const { receipts, restaurant } = useCashierSessions();
+  const { receipts, restaurant, branch } = useCashierSessions();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const todayISO = useMemo(() => toLocalISODate(new Date()), []);
@@ -50,7 +50,10 @@ export default function HistoryDashboard() {
               Bill History
             </h1>
             <p className="text-[12px] text-text-muted mt-0.5">
-              {restaurant.name} · {filtered.length} receipt
+              {restaurant.name} {branch.name ? ` · ${branch.name}` : ""} ·{" "}
+            </p>
+            <p className="text-[12px] text-text-muted mt-0.5">
+              {filtered.length} receipt
               {filtered.length !== 1 ? "s" : ""} · ฿{dayTotal.toLocaleString()}{" "}
               total
             </p>
