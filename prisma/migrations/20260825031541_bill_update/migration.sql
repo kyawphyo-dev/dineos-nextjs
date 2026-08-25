@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Bill" ADD COLUMN     "serviceChargeRate" DECIMAL(65,30) NOT NULL DEFAULT 5,
+ADD COLUMN     "taxRate" DECIMAL(65,30) NOT NULL DEFAULT 7;
