@@ -284,7 +284,9 @@ model Bill {
 
   subtotal Decimal
   discount Decimal @default(0)
+  serviceChargeRate Decimal @default(5)
   serviceCharge Decimal @default(0)
+  taxRate Decimal @default(7)
   tax Decimal @default(0)
 
   grandTotal Decimal

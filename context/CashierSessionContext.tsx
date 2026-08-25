@@ -17,6 +17,7 @@ import type {
 } from "@/app/types/cashier";
 import type { CashierSessionResult } from "@/lib/actions/Cashier/GetCashierSession.action";
 import MarkFinishedEating from "@/lib/actions/Cashier/MarkFinishedEating.action";
+import CreateBill from "@/lib/actions/Cashier/CreateBill.action";
 
 interface CashierSessionsContextValue extends CashierSessionResult {
   sessions: DiningSession[];
@@ -24,6 +25,7 @@ interface CashierSessionsContextValue extends CashierSessionResult {
   getSession: (tableId: string) => DiningSession | undefined;
   getReceipt: (id: string) => ReceiptRecord | undefined;
   markFinishedEating: (tableId: string) => Promise<void>;
+  createBill: (tableId: string, discount: Discount | null) => Promise<void>;
   recordPayment: (
     tableId: string,
     discount: Discount | null,
@@ -75,6 +77,28 @@ export default function CashierSessionProvider({
         ),
       );
       return;
+    }
+
+    startTransition(() => {
+      router.refresh();
+    });
+  };
+
+  const createBill = async (tableId: string, discount: Discount | null) => {
+    const session = sessions.find((s) => s.tableId === tableId);
+    if (!session) throw new Error(`No session found for table ${tableId}`);
+
+    const { subtotal, discountAmount } = calculateBill(session, discount);
+
+    const result = await CreateBill({
+      tableNumber: tableId,
+      branchId: value.branch.id,
+      subtotal,
+      discount: discountAmount,
+    });
+
+    if (!result.success) {
+      throw new Error(result.message ?? "Failed to create bill");
     }
 
     startTransition(() => {
@@ -141,6 +165,7 @@ export default function CashierSessionProvider({
         getSession,
         getReceipt,
         markFinishedEating,
+        createBill,
         recordPayment,
         closeSession,
       }}
