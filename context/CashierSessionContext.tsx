@@ -14,10 +14,12 @@ import type {
   Discount,
   PaymentMethod,
   ReceiptRecord,
+  PaymentSplit,
 } from "@/app/types/cashier";
 import type { CashierSessionResult } from "@/lib/actions/Cashier/GetCashierSession.action";
 import MarkFinishedEating from "@/lib/actions/Cashier/MarkFinishedEating.action";
 import CreateBill from "@/lib/actions/Cashier/CreateBill.action";
+import RecordPayment from "@/lib/actions/Cashier/RecordPayment.action";
 
 interface CashierSessionsContextValue extends CashierSessionResult {
   sessions: DiningSession[];
@@ -29,8 +31,8 @@ interface CashierSessionsContextValue extends CashierSessionResult {
   recordPayment: (
     tableId: string,
     discount: Discount | null,
-    method: PaymentMethod,
-  ) => ReceiptRecord;
+    payments: PaymentSplit[],
+  ) => Promise<ReceiptRecord>;
   closeSession: (tableId: string) => void;
 }
 
@@ -52,7 +54,15 @@ export default function CashierSessionProvider({
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [sessions, setSessions] = useState<DiningSession[]>(value.sessions);
+  const [sessionsPropSnapshot, setSessionsPropSnapshot] = useState(
+    value.sessions,
+  );
   const [receipts, setReceipts] = useState<ReceiptRecord[]>(initialReceipts);
+
+  if (value.sessions !== sessionsPropSnapshot) {
+    setSessions(value.sessions);
+    setSessionsPropSnapshot(value.sessions);
+  }
 
   const getSession = (tableId: string) =>
     sessions.find((s) => s.tableId === tableId);
@@ -101,54 +111,77 @@ export default function CashierSessionProvider({
       throw new Error(result.message ?? "Failed to create bill");
     }
 
+    if (result.data) {
+      const bill = result.data;
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.tableId === tableId
+            ? {
+                ...s,
+                billId: bill.id,
+                billReceiptNumber: bill.receiptNumber,
+                billStatus: bill.status,
+                billSubtotal: bill.subtotal,
+                billDiscount: bill.discount,
+                billGrandTotal: bill.grandTotal,
+              }
+            : s,
+        ),
+      );
+    }
+
     startTransition(() => {
       router.refresh();
     });
   };
 
-  const recordPayment = (
+  const recordPayment = async (
     tableId: string,
     discount: Discount | null,
-    method: PaymentMethod,
-  ) => {
+    payments: PaymentSplit[],
+  ): Promise<ReceiptRecord> => {
     const session = sessions.find((s) => s.tableId === tableId);
     if (!session) throw new Error(`No session found for table ${tableId}`);
+    if (!payments || payments.length === 0) {
+      throw new Error("At least one payment is required");
+    }
 
-    const { subtotal, discountAmount, total } = calculateBill(
-      session,
-      discount,
-    );
-    const now = new Date();
-
-    const receipt: ReceiptRecord = {
-      id: String(receiptCounter++),
-      tableId: session.tableId,
-      packageName: session.packageName,
-      guestCount: session.guestCount,
-      orderIds: session.orderIds,
-      items: session.items,
-      subtotal,
-      discount,
-      discountAmount,
-      total,
-      method,
-      paidAt: now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      paidDate: now.toLocaleDateString([], {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-      paidDateISO: toLocalISODate(now),
-    };
-
+    const prevStatus = session.status;
     setSessions((prev) =>
       prev.map((s) => (s.tableId === tableId ? { ...s, status: "billed" } : s)),
     );
-    setReceipts((prev) => [...prev, receipt]);
-    return receipt;
+
+    try {
+      const result = await RecordPayment({
+        tableNumber: tableId,
+        branchId: value.branch.id,
+        payments: payments.map((p) => ({
+          method: p.method,
+          amount: p.amount,
+          referenceNo: p.referenceNo,
+        })),
+      });
+
+      if (!result.success || !result.data?.receipt) {
+        throw new Error(result.message ?? "Failed to record payment");
+      }
+
+      const receipt = result.data.receipt;
+      setReceipts((prev) => [...prev, receipt]);
+
+      startTransition(() => {
+        router.refresh();
+      });
+
+      return receipt;
+    } catch (e) {
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.tableId === tableId ? { ...s, status: prevStatus } : s,
+        ),
+      );
+      throw e;
+    }
   };
 
   const closeSession = (tableId: string) => {

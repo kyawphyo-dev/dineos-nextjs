@@ -33,6 +33,12 @@ export type CashierDiningSession = {
   status: CashierSessionStatus;
   orderIds: string[];
   items: CashierLineItem[];
+  billId: string | null;
+  billReceiptNumber: string | null;
+  billStatus: string | null;
+  billGrandTotal: number | null;
+  billSubtotal: number | null;
+  billDiscount: number | null;
 };
 
 export type CashierSessionResult = {
@@ -123,6 +129,16 @@ export default async function getCashierSession(): Promise<{
                     },
                   },
                 },
+                bill: {
+                  select: {
+                    id: true,
+                    receiptNumber: true,
+                    status: true,
+                    grandTotal: true,
+                    discount: true,
+                    subtotal: true,
+                  },
+                },
               },
             },
           },
@@ -176,6 +192,18 @@ export default async function getCashierSession(): Promise<{
         status: mapDiningStatusToCashier(diningSession.status),
         orderIds,
         items,
+        billId: diningSession.bill?.id ?? null,
+        billReceiptNumber: diningSession.bill?.receiptNumber ?? null,
+        billStatus: diningSession.bill?.status ?? null,
+        billGrandTotal: diningSession.bill?.grandTotal
+          ? Number(diningSession.bill.grandTotal)
+          : null,
+        billSubtotal: diningSession.bill?.subtotal
+          ? Number(diningSession.bill.subtotal)
+          : null,
+        billDiscount: diningSession.bill?.discount
+          ? Number(diningSession.bill.discount)
+          : null,
       });
     }
 

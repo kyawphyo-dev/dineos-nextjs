@@ -7,7 +7,6 @@ import UserMenu from "@/components/shared/UserMenu";
 import SessionRow from "@/components/cashier/SessionRow";
 import BillSummary from "@/components/cashier/BillSummary";
 import DiscountControls from "@/components/cashier/DiscountControls";
-import SplitBillPanel from "@/components/cashier/SplitBillPanel";
 import PaymentPanel from "@/components/cashier/PaymentPanel";
 import ReceiptConfirmation from "@/components/cashier/ReceiptConfirmation";
 import {
@@ -29,14 +28,12 @@ export default function CashierDashboard() {
     getSession,
     markFinishedEating,
     createBill,
-    recordPayment,
     closeSession,
   } = useCashierSessions();
   const [isCreatingBill, startCreateBillTransition] = useTransition();
   const [createBillError, setCreateBillError] = useState<string | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [discount, setDiscount] = useState<Discount | null>(null);
-  const [showSplit, setShowSplit] = useState(false);
   const [method, setMethod] = useState<PaymentMethod>("cash");
   const [paidReceipt, setPaidReceipt] = useState<ReceiptRecord | null>(null);
   const [billCreated, setBillCreated] = useState(false);
@@ -48,17 +45,11 @@ export default function CashierDashboard() {
   const handleSelect = (tableId: string) => {
     setSelectedTableId(tableId);
     setDiscount(null);
-    setShowSplit(false);
     setPaidReceipt(null);
     setMethod("cash");
-    setBillCreated(false);
     setCreateBillError(null);
-  };
-
-  const handleConfirmPayment = () => {
-    if (!selectedSession) return;
-    const receipt = recordPayment(selectedSession.tableId, discount, method);
-    setPaidReceipt(receipt);
+    const session = sessions.find((s) => s.tableId === tableId);
+    setBillCreated(session ? !!session.billId : false);
   };
 
   const handleCloseSession = () => {
@@ -89,6 +80,9 @@ export default function CashierDashboard() {
   const handleMarkFinishedEating = async (tableId: string) => {
     await markFinishedEating(tableId);
   };
+
+  const hasServerBill = !!selectedSession?.billId;
+  const showPaymentFlow = billCreated || hasServerBill;
 
   const billTotal = selectedSession
     ? calculateBill(selectedSession, discount).total
@@ -159,7 +153,7 @@ export default function CashierDashboard() {
                   receipt={paidReceipt}
                   onClose={handleCloseSession}
                 />
-              ) : !billCreated ? (
+              ) : !showPaymentFlow ? (
                 <>
                   <BillSummary session={selectedSession} discount={discount} />
                   <DiscountControls
@@ -225,27 +219,14 @@ export default function CashierDashboard() {
                 <>
                   <BillSummary session={selectedSession} discount={discount} />
 
-                  {!showSplit ? (
-                    <button
-                      onClick={() => setShowSplit(true)}
-                      className="w-full border border-black/12 text-text-muted rounded-xl py-2.5 text-[13px] font-medium flex items-center justify-center gap-1.5 bg-white"
-                    >
-                      <Users className="w-3.5 h-3.5" />
-                      Split bill between guests
-                    </button>
-                  ) : (
-                    <SplitBillPanel
-                      session={selectedSession}
-                      total={billTotal}
-                      onClose={() => setShowSplit(false)}
-                    />
-                  )}
-
                   <PaymentPanel
                     selected={method}
                     onSelect={setMethod}
                     total={billTotal}
-                    onConfirm={handleConfirmPayment}
+                    onConfirm={() => {}}
+                    onPaymentComplete={(receipt) => setPaidReceipt(receipt)}
+                    session={selectedSession}
+                    discount={discount}
                   />
                 </>
               )}

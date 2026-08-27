@@ -28,9 +28,21 @@ export type DiningSession = {
   status: SessionStatus;
   orderIds: string[];
   items: LineItem[];
+  billId: string | null;
+  billReceiptNumber: string | null;
+  billStatus: string | null;
+  billGrandTotal: number | null;
+  billSubtotal: number | null;
+  billDiscount: number | null;
 };
 
 export type SplitMode = "even" | "byItem";
+
+export type PaymentSplit = {
+  method: PaymentMethod;
+  amount: number;
+  referenceNo?: string;
+};
 
 export type ReceiptRecord = {
   id: string;
