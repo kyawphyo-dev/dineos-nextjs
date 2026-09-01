@@ -5,10 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { errorAction } from "@/lib/response";
 import { serializePrisma } from "@/lib/serializer";
 
+const ORDER_ALLOWED_DINING_STATUSES = ["seated", "ordering", "dining"] as const;
+
 const ACTIVE_DINING_STATUSES = [
-  "seated",
-  "ordering",
-  "dining",
+  ...ORDER_ALLOWED_DINING_STATUSES,
   "finishedEating",
   "paying",
 ] as const;

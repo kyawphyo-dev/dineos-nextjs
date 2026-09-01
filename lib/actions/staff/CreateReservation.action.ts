@@ -37,7 +37,40 @@ async function CreateReservation(params: CreateReservationParams) {
 
   const reservedTimeDate = new Date(reservedTime);
   if (Number.isNaN(reservedTimeDate.getTime())) {
-    return errorAction("Invalid reserved time");
+    return errorAction("Invalid reservation date and time");
+  }
+
+  const now = new Date();
+  const WORKING_HOUR_START = 11;
+  const WORKING_HOUR_END = 21;
+  const MIN_MINUTES_AHEAD = 30;
+
+  if (reservedTimeDate < now) {
+    return errorAction("Reservation date and time cannot be in the past");
+  }
+
+  const minutesDiff = (reservedTimeDate.getTime() - now.getTime()) / (1000 * 60);
+  if (minutesDiff < MIN_MINUTES_AHEAD) {
+    return errorAction(
+      `Reservation must be at least ${MIN_MINUTES_AHEAD} minutes from now`
+    );
+  }
+
+  const hour = reservedTimeDate.getHours();
+  const minute = reservedTimeDate.getMinutes();
+  const totalMinutes = hour * 60 + minute;
+  const startMinutes = WORKING_HOUR_START * 60;
+  const endMinutes = WORKING_HOUR_END * 60;
+
+  if (totalMinutes < startMinutes || totalMinutes > endMinutes) {
+    const formatHour = (h: number) => {
+      const suffix = h >= 12 ? "pm" : "am";
+      const display = h > 12 ? h - 12 : h === 0 ? 12 : h;
+      return `${display}${suffix}`;
+    };
+    return errorAction(
+      `Reservation time must be during working hours (${formatHour(WORKING_HOUR_START)} - ${formatHour(WORKING_HOUR_END)})`
+    );
   }
 
   try {
@@ -77,7 +110,7 @@ async function CreateReservation(params: CreateReservationParams) {
           reservedTime: reservedTimeDate,
           note,
           createdById: staffId,
-          status: "pending",
+          status: "confirmed",
         },
       });
 

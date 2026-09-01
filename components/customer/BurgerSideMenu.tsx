@@ -22,6 +22,7 @@ import type {
 } from "@/context/CustomerTableSessionProvider";
 import { LANGUAGES, type LanguageCode } from "./customerMenu.utils";
 import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
+import CancelBillRequestCustomer from "@/lib/actions/customer/CancelBillRequestCustomer.action";
 
 type BurgerSideMenuProps = {
   showBurger: boolean;
@@ -151,12 +152,13 @@ function BurgerSideMenu({
     if (!tableId || isCancellingBill) return;
     setIsCancellingBill(true);
     try {
-      const res = await UpdateTableStatusCustomer({
+      const res = await CancelBillRequestCustomer({
         tableId,
-        status: "occupied",
       });
       if (res.success) {
-        toast.success("Request bill cancelled. You can continue ordering.");
+        toast.success(
+          res.message ?? "Request bill cancelled. You can continue ordering.",
+        );
         setShowBurger(false);
         onStatusChange?.();
       } else {

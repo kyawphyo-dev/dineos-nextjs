@@ -25,7 +25,14 @@ export default function CartPage() {
     clearCart,
     setTableId,
   } = useCart();
-  const { table, orders } = useCustomerTableSession();
+  const { table, orders, session } = useCustomerTableSession();
+
+  const ORDER_ALLOWED_STATUSES: Array<typeof session.status> = [
+    "seated",
+    "ordering",
+    "dining",
+  ];
+  const isSessionOrderable = ORDER_ALLOWED_STATUSES.includes(session.status);
   const id = params.id as string;
   const [isPlacing, setIsPlacing] = useState(false);
   const [isCancellingBill, setIsCancellingBill] = useState(false);
@@ -42,6 +49,12 @@ export default function CartPage() {
     }
     if (cart.length === 0) {
       toast.error("Your cart is empty.");
+      return;
+    }
+    if (!isSessionOrderable) {
+      toast.error(
+        "Cannot place order at this time. Please contact staff for assistance.",
+      );
       return;
     }
 
@@ -104,6 +117,45 @@ export default function CartPage() {
 
   const displayTableNumber = table?.tableNumber ?? tableId ?? "—";
   const isRequestBillActive = table?.status === "request_bill";
+  const orderingDisabled = !isSessionOrderable || isRequestBillActive;
+
+  const getStatusBlockInfo = () => {
+    if (isRequestBillActive) {
+      return {
+        icon: <Receipt className="w-6 h-6 text-[#9A6C10] mx-auto mb-2" />,
+        title: "Bill requested",
+        subtitle: "Ordering is disabled. Staff is preparing your bill.",
+        cardClass: "bg-gold-light",
+        titleClass: "text-[#9A6C10]",
+        subtitleClass: "text-[#9A6C10]/70",
+      } as const;
+    }
+    if (session.status === "finishedEating") {
+      return {
+        icon: <Receipt className="w-6 h-6 text-clay mx-auto mb-2" />,
+        title: "Finished eating",
+        subtitle:
+          "Ordering is no longer available. Please request your bill or contact staff.",
+        cardClass: "bg-clay-light/50",
+        titleClass: "text-clay-dark",
+        subtitleClass: "text-clay-dark/70",
+      } as const;
+    }
+    if (session.status === "paying") {
+      return {
+        icon: <Receipt className="w-6 h-6 text-text-primary mx-auto mb-2" />,
+        title: "Payment in progress",
+        subtitle:
+          "Ordering is disabled during payment. Please contact staff if you need anything.",
+        cardClass: "bg-cream-dark",
+        titleClass: "text-text-primary",
+        subtitleClass: "text-text-muted",
+      } as const;
+    }
+    return null;
+  };
+
+  const statusBlockInfo = getStatusBlockInfo();
 
   return (
     <div className="flex flex-col min-h-screen bg-cream">
@@ -171,15 +223,21 @@ export default function CartPage() {
               View my orders
             </motion.button>
           )}
-          {isRequestBillActive ? (
+          {orderingDisabled && statusBlockInfo ? (
             <div className="flex flex-col gap-3">
-              <div className="bg-gold-light rounded-2xl p-4 text-center">
-                <Receipt className="w-6 h-6 text-[#9A6C10] mx-auto mb-2" />
-                <p className="text-[14px] font-medium text-[#9A6C10]">
-                  Bill requested
+              <div
+                className={`${statusBlockInfo.cardClass} rounded-2xl p-4 text-center`}
+              >
+                {statusBlockInfo.icon}
+                <p
+                  className={`text-[14px] font-medium ${statusBlockInfo.titleClass}`}
+                >
+                  {statusBlockInfo.title}
                 </p>
-                <p className="text-[11px] text-[#9A6C10]/70 mt-1">
-                  Ordering is disabled. Staff is preparing your bill.
+                <p
+                  className={`text-[11px] ${statusBlockInfo.subtitleClass} mt-1`}
+                >
+                  {statusBlockInfo.subtitle}
                 </p>
               </div>
               <div className="flex items-center justify-between mb-1 px-1">
@@ -190,24 +248,31 @@ export default function CartPage() {
                   ฿{totalPrice}
                 </span>
               </div>
-              <motion.button
-                whileTap={!isCancellingBill ? { scale: 0.97 } : {}}
-                onClick={handleCancelRequestBill}
-                disabled={isCancellingBill}
-                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isCancellingBill ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Cancelling…
-                  </>
-                ) : (
-                  <>
-                    <X className="w-4 h-4" />
-                    Cancel request bill to place order
-                  </>
-                )}
-              </motion.button>
+              {isRequestBillActive ? (
+                <motion.button
+                  whileTap={!isCancellingBill ? { scale: 0.97 } : {}}
+                  onClick={handleCancelRequestBill}
+                  disabled={isCancellingBill}
+                  className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isCancellingBill ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Cancelling…
+                    </>
+                  ) : (
+                    <>
+                      <X className="w-4 h-4" />
+                      Cancel request bill to place order
+                    </>
+                  )}
+                </motion.button>
+              ) : (
+                <div className="w-full bg-cream-dark border border-black/8 text-text-hint rounded-2xl py-3.5 text-[14px] font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+                  <Receipt className="w-4 h-4" />
+                  Ordering unavailable — contact staff
+                </div>
+              )}
             </div>
           ) : (
             <>

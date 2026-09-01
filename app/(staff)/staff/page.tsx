@@ -1,7 +1,7 @@
 import StaffDashboard from "@/components/staff/StaffDashboard";
 import RouteGuard from "@/components/shared/RouteGuard";
-import { getStaffTables } from "@/lib/actions/staff/getStaffTable";
-import { GetRestaurant } from "@/lib/actions/staff/GetRestaurant";
+import { getStaffTables } from "@/lib/actions/staff/getStaffTable.action";
+import { GetRestaurant } from "@/lib/actions/staff/GetRestaurant.action";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import GetPackages from "@/lib/actions/GetPackages.action";

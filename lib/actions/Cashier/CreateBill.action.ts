@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
@@ -7,7 +8,6 @@ import { errorAction } from "@/lib/response";
 import { serializePrisma } from "@/lib/serializer";
 import { revalidatePath } from "next/cache";
 import CreateBillSchema from "@/lib/schemas/CreateBillSchema";
-import { authenticatedUser } from "@/app/types/admin";
 
 interface CreateBillParams {
   tableNumber: string;
@@ -75,7 +75,6 @@ async function CreateBill(params: CreateBillParams) {
     if (!session?.user) {
       throw new Error("Unauthorized");
     }
-    const { id: cashierId } = session.user as authenticatedUser;
 
     const table = await prisma.table.findUnique({
       where: {
@@ -123,13 +122,13 @@ async function CreateBill(params: CreateBillParams) {
       const bill = await tx.bill.create({
         data: {
           sessionId: activeSession.id,
-          subtotal,
-          discount,
-          serviceChargeRate,
-          serviceCharge,
-          taxRate,
-          tax,
-          grandTotal,
+          subtotal: new Prisma.Decimal(subtotal),
+          discount: new Prisma.Decimal(discount),
+          serviceChargeRate: new Prisma.Decimal(serviceChargeRate),
+          serviceCharge: new Prisma.Decimal(serviceCharge),
+          taxRate: new Prisma.Decimal(taxRate),
+          tax: new Prisma.Decimal(tax),
+          grandTotal: new Prisma.Decimal(grandTotal),
           status: "unpaid",
           receiptNumber,
         },

@@ -15,6 +15,14 @@ interface SeatReservationParams {
   guestCount: number;
 }
 
+const ACTIVE_DINING_STATUSES = [
+  "seated",
+  "ordering",
+  "dining",
+  "finishedEating",
+  "paying",
+] as const;
+
 async function SeatReservation(params: SeatReservationParams) {
   const validate = SeatReservationSchema.safeParse(params);
   if (!validate.success) {
@@ -67,6 +75,21 @@ async function SeatReservation(params: SeatReservationParams) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      const existingActiveSession = await tx.diningSession.findFirst({
+        where: {
+          tableId: table.id,
+          status: { in: [...ACTIVE_DINING_STATUSES] },
+        },
+        orderBy: { startedAt: "desc" },
+        select: { id: true, status: true },
+      });
+
+      if (existingActiveSession) {
+        throw new Error(
+          `Table ${tableNumber} already has an active dining session`,
+        );
+      }
+
       const updatedTable = await tx.table.update({
         where: { id: table.id },
         data: { status: "occupied" },
@@ -75,7 +98,7 @@ async function SeatReservation(params: SeatReservationParams) {
       const updatedReservation = await tx.reservation.update({
         where: { id: reservationId },
         data: {
-          status: "seated",
+          status: "arrived",
           seatedAt: new Date(),
           tableId: reservation.tableId ?? table.id,
         },
