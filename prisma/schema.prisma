@@ -358,7 +358,6 @@ enum ReservationStatus {
   pending
   confirmed
   arrived
-  seated
   completed
   cancelled
   noShow

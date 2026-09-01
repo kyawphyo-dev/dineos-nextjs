@@ -24,6 +24,7 @@ import CancelReservation from "@/lib/actions/staff/CancelReservation.action";
 import NoShowReservation from "@/lib/actions/staff/NoShowReservation.action";
 import SeatReservation from "@/lib/actions/staff/SeatReservation.action";
 import UpdateTableStatusStaff from "@/lib/actions/staff/UpdateTableStatusStaff.action";
+import CancelBillRequestStaff from "@/lib/actions/staff/CancelBillRequestStaff.action";
 import StatusLegend from "./StatusLegend";
 
 interface TableWithZone extends Table {
@@ -273,15 +274,8 @@ export default function StaffDashboard({
   const handleCancelRequestBill = async (tableNumber: string) => {
     if (!branch?.id) return;
 
-    const table = realTables.find((t) => t.tableNumber === tableNumber);
-    if (!table) {
-      alert("Table not found");
-      return;
-    }
-
-    const result = await UpdateTableStatusStaff({
-      tableId: table.id,
-      status: "occupied",
+    const result = await CancelBillRequestStaff({
+      tableNumber,
       branchId: branch.id,
     });
 

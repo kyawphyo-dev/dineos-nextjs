@@ -9,10 +9,10 @@ import PlaceOrderSchema, {
   type PlaceOrderInput,
 } from "@/lib/schemas/PlaceOrderSchema";
 
+const ORDER_ALLOWED_DINING_STATUSES = ["seated", "ordering", "dining"] as const;
+
 const ACTIVE_DINING_STATUSES = [
-  "seated",
-  "ordering",
-  "dining",
+  ...ORDER_ALLOWED_DINING_STATUSES,
   "finishedEating",
   "paying",
 ] as const;
@@ -89,6 +89,25 @@ export default async function PlaceOrder(params: PlaceOrderInput): Promise<{
         success: false,
         message: "No active dining session found for this table",
         details: null,
+      };
+    }
+
+    if (
+      !(ORDER_ALLOWED_DINING_STATUSES as readonly string[]).includes(
+        diningSession.status,
+      )
+    ) {
+      const statusLabel: Record<string, string> = {
+        finishedEating: "you have finished eating",
+        paying: "payment is in progress",
+        completed: "your dining has been completed",
+        cancelled: "your session has been cancelled",
+      };
+      const reason = statusLabel[diningSession.status] ?? "this session stage";
+      return {
+        success: false,
+        message: `Cannot place order at this time — ${reason}. Please contact staff if you need assistance.`,
+        details: { diningStatus: diningSession.status },
       };
     }
 

@@ -18,9 +18,8 @@ async function CloseDiningSession(params: CloseDiningSessionParams) {
     if (!session?.user) {
       throw new Error("Unauthorized");
     }
-    const { id: staffId } = session.user as authenticatedUser;
+    // const { id: staffId } = session.user as authenticatedUser;
 
-    // Find the table first
     const table = await prisma.table.findUnique({
       where: {
         branchId_tableNumber: {
@@ -34,7 +33,6 @@ async function CloseDiningSession(params: CloseDiningSessionParams) {
       throw new Error("Table not found");
     }
 
-    // Update dining session and table status in a transaction
     const result = await prisma.$transaction(async (tx) => {
       const updatedSession = await tx.diningSession.update({
         where: { id: params.sessionId },

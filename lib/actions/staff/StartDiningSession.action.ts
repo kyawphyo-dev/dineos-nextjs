@@ -14,6 +14,14 @@ interface StartDiningSessionParams {
   branchId: string;
 }
 
+const ACTIVE_DINING_STATUSES = [
+  "seated",
+  "ordering",
+  "dining",
+  "finishedEating",
+  "paying",
+] as const;
+
 async function StartDiningSession(params: StartDiningSessionParams) {
   const validate = StartDiningSessionSchema.safeParse(params);
   if (!validate.success) {
@@ -42,12 +50,26 @@ async function StartDiningSession(params: StartDiningSessionParams) {
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      const existingActiveSession = await tx.diningSession.findFirst({
+        where: {
+          tableId: table.id,
+          status: { in: [...ACTIVE_DINING_STATUSES] },
+        },
+        orderBy: { startedAt: "desc" },
+        select: { id: true, status: true },
+      });
+
+      if (existingActiveSession) {
+        throw new Error(
+          `Table ${tableNumber} already has an active dining session`,
+        );
+      }
+
       const updatedTable = await tx.table.update({
         where: { id: table.id },
         data: { status: "occupied" },
       });
 
-      // Create the dining session
       const diningSession = await tx.diningSession.create({
         data: {
           tableId: table.id,

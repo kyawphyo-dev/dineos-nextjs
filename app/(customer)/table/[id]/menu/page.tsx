@@ -90,8 +90,18 @@ export default function MenuPage() {
 
   const sessionElapsed = formatDuration(session.startedAt);
 
+  const ORDER_ALLOWED_STATUSES: Array<typeof session.status> = [
+    "seated",
+    "ordering",
+    "dining",
+  ];
+  const isSessionOrderable = ORDER_ALLOWED_STATUSES.includes(session.status);
+
   const isRequestBillActive = table.status === "request_bill";
   const isNeedAttentionActive = table.status === "need_attention";
+  const orderingDisabled = !isSessionOrderable || isRequestBillActive;
+  const isFinishedEating = session.status === "finishedEating";
+  const isPaying = session.status === "paying";
 
   const allCategoryNames = useMemo(
     () => [ALL_CATEGORY, ...categories.map((c) => c.name)],
@@ -238,6 +248,57 @@ export default function MenuPage() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {!isRequestBillActive && isFinishedEating && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-clay-light/60 border-b border-clay/20 px-5 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-clay flex items-center justify-center shrink-0">
+                <Receipt className="w-4 h-4 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-clay-dark">
+                  Finished eating
+                </p>
+                <p className="text-[11px] text-clay-dark/70 mt-0.5">
+                  Ordering is no longer available. Request your bill when ready.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!isRequestBillActive && isPaying && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-cream-dark border-b border-black/8 px-5 py-3"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-text-primary/80 flex items-center justify-center shrink-0">
+                <Loader2 className="w-4 h-4 text-white animate-spin" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium text-text-primary">
+                  Payment in progress
+                </p>
+                <p className="text-[11px] text-text-muted mt-0.5">
+                  Ordering is disabled during payment. Contact staff if you need
+                  help.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <MenuSearchBar
         showSearch={showSearch}
         setShowSearch={setShowSearch}
@@ -259,14 +320,14 @@ export default function MenuPage() {
         getQty={getQty}
         addItem={addItem}
         removeItem={removeItem}
-        disabled={isRequestBillActive}
+        disabled={orderingDisabled}
       />
 
       <CartFooter
         totalItems={totalItems}
         totalPrice={totalPrice}
         onCartClick={handleCartClick}
-        orderingDisabled={isRequestBillActive}
+        orderingDisabled={orderingDisabled}
       />
 
       <AnimatePresence>
