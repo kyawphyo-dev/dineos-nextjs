@@ -9,6 +9,7 @@ import QrHandoffCard from "@/components/staff/QrHandoffCard";
 import ReservationCard from "@/components/staff/ReservationCard";
 import NeedAttentionCard from "@/components/staff/NeedAttentionCard";
 import RequestBillCard from "@/components/staff/RequestBillCard";
+import CleaningCard from "@/components/staff/CleaningCard";
 import type {
   CreateReservationInput,
   FrontTable,
@@ -25,10 +26,17 @@ import NoShowReservation from "@/lib/actions/staff/NoShowReservation.action";
 import SeatReservation from "@/lib/actions/staff/SeatReservation.action";
 import UpdateTableStatusStaff from "@/lib/actions/staff/UpdateTableStatusStaff.action";
 import CancelBillRequestStaff from "@/lib/actions/staff/CancelBillRequestStaff.action";
+import MarkTableCleaningStaff from "@/lib/actions/staff/MarkTableCleaningStaff.action";
+import FinishCleaningStaff from "@/lib/actions/staff/FinishCleaningStaff.action";
 import StatusLegend from "./StatusLegend";
 
 interface TableWithZone extends Table {
-  zone?: { id?: string; name?: string; branchId?: string };
+  zone?: {
+    id?: string;
+    name?: string;
+    branchId?: string;
+    createdAt?: string | Date;
+  };
   diningSessions?: Array<{
     id: string;
     packageId?: string | null;
@@ -68,7 +76,52 @@ export default function StaffDashboard({
   branch,
   packages,
 }: Props) {
-  const groupedTables: GroupedTables = realTables.reduce((acc, table) => {
+  const sortedTables = [...realTables].sort((a, b) => {
+    const aZone = a.zone;
+    const bZone = b.zone;
+
+    if (!aZone && !bZone) {
+      return a.tableNumber.localeCompare(b.tableNumber, undefined, {
+        numeric: true,
+        sensitivity: "base",
+      });
+    }
+    if (!aZone) return 1;
+    if (!bZone) return -1;
+
+    const aCreated = aZone.createdAt ? new Date(aZone.createdAt).getTime() : 0;
+    const bCreated = bZone.createdAt ? new Date(bZone.createdAt).getTime() : 0;
+    if (aCreated !== bCreated) {
+      return aCreated - bCreated;
+    }
+
+    const aZoneName = aZone.name ?? "";
+    const bZoneName = bZone.name ?? "";
+    if (aZoneName !== bZoneName) {
+      return aZoneName.localeCompare(bZoneName);
+    }
+
+    return a.tableNumber.localeCompare(b.tableNumber, undefined, {
+      numeric: true,
+      sensitivity: "base",
+    });
+  });
+
+  const zoneMetaMap = new Map<string, { createdAt: number }>();
+  for (const t of sortedTables) {
+    if (t.zone && t.zone.name) {
+      const zoneName = t.zone.name;
+      if (!zoneMetaMap.has(zoneName)) {
+        zoneMetaMap.set(zoneName, {
+          createdAt: t.zone.createdAt
+            ? new Date(t.zone.createdAt).getTime()
+            : 0,
+        });
+      }
+    }
+  }
+
+  const groupedTablesObj: GroupedTables = sortedTables.reduce((acc, table) => {
     const zoneName = table.zone?.name || "Unassigned";
     const diningSession = table.diningSessions?.[0];
     const reservation = table.reservations?.[0];
@@ -78,7 +131,8 @@ export default function StaffDashboard({
       table.status === "attention" ||
       table.status === "reserved" ||
       table.status === "need_attention" ||
-      table.status === "request_bill"
+      table.status === "request_bill" ||
+      table.status === "cleaning"
         ? (table.status as FrontTable["status"])
         : "available";
     const frontTable: FrontTable = {
@@ -98,13 +152,21 @@ export default function StaffDashboard({
           }
         : undefined,
       meta:
-        normalizedStatus === "reserved" && reservation?.reservedTime
-          ? formatReservationTime(reservation.reservedTime)
-          : normalizedStatus === "need_attention"
-            ? "Needs attention"
-            : normalizedStatus === "request_bill"
-              ? "Request bill"
-              : `${table.capacity} seats`,
+        normalizedStatus === "reserved"
+          ? reservation?.reservedTime
+            ? formatReservationTime(reservation.reservedTime)
+            : "Reserved"
+          : normalizedStatus === "occupied"
+            ? "Occupied"
+            : normalizedStatus === "attention"
+              ? "Occupied"
+              : normalizedStatus === "need_attention"
+                ? "Needs attention"
+                : normalizedStatus === "request_bill"
+                  ? "Request bill"
+                  : normalizedStatus === "cleaning"
+                    ? "Cleaning"
+                    : `${table.capacity} seats`,
       session: diningSession
         ? {
             id: diningSession.id,
@@ -123,6 +185,25 @@ export default function StaffDashboard({
     acc[zoneName].push(frontTable);
     return acc;
   }, {} as GroupedTables);
+
+  const zoneOrder = Array.from(
+    new Set(sortedTables.map((t) => t.zone?.name || "Unassigned")),
+  );
+  zoneOrder.sort((a, b) => {
+    if (a === "Unassigned") return 1;
+    if (b === "Unassigned") return -1;
+    const aMeta = zoneMetaMap.get(a);
+    const bMeta = zoneMetaMap.get(b);
+    const aC = aMeta?.createdAt ?? 0;
+    const bC = bMeta?.createdAt ?? 0;
+    if (aC !== bC) return aC - bC;
+    return a.localeCompare(b);
+  });
+
+  const groupedTables: GroupedTables = {};
+  for (const zn of zoneOrder) {
+    groupedTables[zn] = groupedTablesObj[zn] || [];
+  }
 
   const allTables: FrontTable[] = Object.values(groupedTables).flat();
 
@@ -287,6 +368,38 @@ export default function StaffDashboard({
     }
   };
 
+  const handleMarkCleaning = async (tableNumber: string) => {
+    if (!branch?.id) return;
+
+    const result = await MarkTableCleaningStaff({
+      tableNumber,
+      branchId: branch.id,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to mark table as cleaning");
+    }
+  };
+
+  const handleFinishCleaning = async (tableNumber: string) => {
+    if (!branch?.id) return;
+
+    const result = await FinishCleaningStaff({
+      tableNumber,
+      branchId: branch.id,
+    });
+
+    if (result.success) {
+      setSelectedId(null);
+      window.location.reload();
+    } else {
+      alert(result.message || "Failed to finish cleaning");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-cream-dark relative">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-6">
@@ -309,7 +422,8 @@ export default function StaffDashboard({
                     t.status === "occupied" ||
                     t.status === "attention" ||
                     t.status === "need_attention" ||
-                    t.status === "request_bill",
+                    t.status === "request_bill" ||
+                    t.status === "cleaning",
                 ).length
               }{" "}
               active
@@ -336,7 +450,8 @@ export default function StaffDashboard({
                     t.status === "occupied" ||
                     t.status === "attention" ||
                     t.status === "need_attention" ||
-                    t.status === "request_bill",
+                    t.status === "request_bill" ||
+                    t.status === "cleaning",
                 ).length
               }{" "}
               active
@@ -408,7 +523,12 @@ export default function StaffDashboard({
                   <RequestBillCard
                     table={selectedTable}
                     onCancelRequestBill={handleCancelRequestBill}
-                    onCloseSession={handleClose}
+                    onCleaning={handleMarkCleaning}
+                  />
+                ) : selectedTable.status === "cleaning" ? (
+                  <CleaningCard
+                    table={selectedTable}
+                    onFinishCleaning={handleFinishCleaning}
                   />
                 ) : selectedTable.status === "occupied" ||
                   selectedTable.status === "attention" ? (

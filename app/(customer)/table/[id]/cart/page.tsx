@@ -6,7 +6,7 @@ import { ChevronLeft, ShoppingBag, Loader2, Receipt, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import PlaceOrderAction from "@/lib/actions/customer/PlaceOrder.action";
-import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
+import CancelBillRequestCustomer from "@/lib/actions/customer/CancelBillRequestCustomer.action";
 import { useCart } from "@/context/CartContext";
 import { useCustomerTableSession } from "@/context/CustomerTableSessionProvider";
 import type { CustomerOrder } from "@/app/types/customer";
@@ -92,12 +92,13 @@ export default function CartPage() {
     if (!tableId || isCancellingBill) return;
     setIsCancellingBill(true);
     try {
-      const res = await UpdateTableStatusCustomer({
+      const res = await CancelBillRequestCustomer({
         tableId,
-        status: "occupied",
       });
       if (res.success) {
-        toast.success("Request bill cancelled. You can continue ordering.");
+        toast.success(
+          res.message ?? "Request bill cancelled. You can continue ordering.",
+        );
         startTransition(() => {
           router.refresh();
         });
@@ -117,14 +118,40 @@ export default function CartPage() {
 
   const displayTableNumber = table?.tableNumber ?? tableId ?? "—";
   const isRequestBillActive = table?.status === "request_bill";
+  const isFinishedEating = session.status === "finishedEating";
+  const isPaying = session.status === "paying";
+  const canCancelBillRequest = isRequestBillActive && isFinishedEating;
   const orderingDisabled = !isSessionOrderable || isRequestBillActive;
 
   const getStatusBlockInfo = () => {
     if (isRequestBillActive) {
+      if (isPaying) {
+        return {
+          icon: <Receipt className="w-6 h-6 text-text-primary mx-auto mb-2" />,
+          title: "Payment in progress",
+          subtitle:
+            "Ordering is disabled during payment. Contact staff if you need help.",
+          cardClass: "bg-cream-dark",
+          titleClass: "text-text-primary",
+          subtitleClass: "text-text-muted",
+        } as const;
+      }
+      if (canCancelBillRequest) {
+        return {
+          icon: <Receipt className="w-6 h-6 text-[#9A6C10] mx-auto mb-2" />,
+          title: "Bill requested",
+          subtitle:
+            "Staff is preparing your bill. You can cancel before payment starts.",
+          cardClass: "bg-gold-light",
+          titleClass: "text-[#9A6C10]",
+          subtitleClass: "text-[#9A6C10]/70",
+        } as const;
+      }
       return {
         icon: <Receipt className="w-6 h-6 text-[#9A6C10] mx-auto mb-2" />,
         title: "Bill requested",
-        subtitle: "Ordering is disabled. Staff is preparing your bill.",
+        subtitle:
+          "Staff has been notified. Contact staff if you need to make changes.",
         cardClass: "bg-gold-light",
         titleClass: "text-[#9A6C10]",
         subtitleClass: "text-[#9A6C10]/70",
@@ -249,24 +276,31 @@ export default function CartPage() {
                 </span>
               </div>
               {isRequestBillActive ? (
-                <motion.button
-                  whileTap={!isCancellingBill ? { scale: 0.97 } : {}}
-                  onClick={handleCancelRequestBill}
-                  disabled={isCancellingBill}
-                  className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                  {isCancellingBill ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Cancelling…
-                    </>
-                  ) : (
-                    <>
-                      <X className="w-4 h-4" />
-                      Cancel request bill to place order
-                    </>
-                  )}
-                </motion.button>
+                canCancelBillRequest ? (
+                  <motion.button
+                    whileTap={!isCancellingBill ? { scale: 0.97 } : {}}
+                    onClick={handleCancelRequestBill}
+                    disabled={isCancellingBill}
+                    className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isCancellingBill ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Cancelling…
+                      </>
+                    ) : (
+                      <>
+                        <X className="w-4 h-4" />
+                        Cancel request bill to place order
+                      </>
+                    )}
+                  </motion.button>
+                ) : (
+                  <div className="w-full bg-cream-dark border border-black/8 text-text-hint rounded-2xl py-3.5 text-[14px] font-medium flex items-center justify-center gap-2 cursor-not-allowed">
+                    <Receipt className="w-4 h-4" />
+                    Ordering unavailable — contact staff
+                  </div>
+                )
               ) : (
                 <div className="w-full bg-cream-dark border border-black/8 text-text-hint rounded-2xl py-3.5 text-[14px] font-medium flex items-center justify-center gap-2 cursor-not-allowed">
                   <Receipt className="w-4 h-4" />

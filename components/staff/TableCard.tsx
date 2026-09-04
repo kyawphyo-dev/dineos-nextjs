@@ -8,34 +8,39 @@ const STATUS_STYLES: Record<
   { bg: string; text: string; border: string }
 > = {
   available: {
-    bg: "bg-sage-light",
-    text: "text-sage",
-    border: "border-transparent",
+    bg: "bg-green-100",
+    text: "text-green-700",
+    border: "border-dashed border-green-300",
   },
   occupied: {
-    bg: "bg-gold-light",
-    text: "text-[#9A6C10]",
-    border: "border-transparent",
+    bg: "bg-blue-200",
+    text: "text-blue-700",
+    border: "border-dashed border-blue-300",
   },
   attention: {
-    bg: "bg-rose-light",
-    text: "text-rose",
-    border: "border-transparent",
+    bg: "bg-red-100",
+    text: "text-red-700",
+    border: "border-dashed border-red-300",
   },
   need_attention: {
-    bg: "bg-rose-light",
-    text: "text-rose",
-    border: "border-rose/30 border-2",
+    bg: "bg-red-100",
+    text: "text-red-700",
+    border: "border-dashed border-red-300",
   },
   request_bill: {
-    bg: "bg-purple-100",
-    text: "text-purple-700",
-    border: "border-purple-300 border-2",
+    bg: "bg-yellow-100",
+    text: "text-yellow-700",
+    border: "border-dashed border-yellow-300",
   },
   reserved: {
-    bg: "bg-white",
-    text: "text-text-hint",
-    border: "border-dashed border-black/15",
+    bg: "bg-sky-100",
+    text: "text-sky-700",
+    border: "border-dashed border-sky-300",
+  },
+  cleaning: {
+    bg: "bg-gray-100",
+    text: "text-gray-700",
+    border: "border-transparent border-dashed border-gray-300",
   },
 };
 
@@ -57,12 +62,17 @@ export default function TableCard({ table, selected, onClick }: Props) {
       }`}
     >
       {(table.status === "need_attention" ||
-        table.status === "request_bill") && (
+        table.status === "request_bill" ||
+        table.status === "cleaning") && (
         <span
           className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full animate-pulse"
           style={{
             backgroundColor:
-              table.status === "need_attention" ? "#f43f5e" : "#7c3aed",
+              table.status === "need_attention"
+                ? "#dc2626"
+                : table.status === "request_bill"
+                  ? "#ca8a04"
+                  : "#4b5563",
           }}
         />
       )}

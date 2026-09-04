@@ -13,11 +13,12 @@ import {
   toCustomerOrderStatus,
 } from "@/components/customer/OrderCard";
 import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
+import CancelBillRequestCustomer from "@/lib/actions/customer/CancelBillRequestCustomer.action";
 
 export default function OrdersPage() {
   const router = useRouter();
   const params = useParams();
-  const { orders: dbOrders, table } = useCustomerTableSession();
+  const { orders: dbOrders, table, session } = useCustomerTableSession();
   const { tableId, setTableId } = useCart();
   const id = params.id as string;
 
@@ -62,6 +63,10 @@ export default function OrdersPage() {
 
   const isRequestBillActive = table?.status === "request_bill";
   const isNeedAttentionActive = table?.status === "need_attention";
+  const isFinishedEating = session?.status === "finishedEating";
+  const isPaying = session?.status === "paying";
+  const canCancelBillRequest = isRequestBillActive && isFinishedEating;
+  const isCallStaffDisabled = isFinishedEating || isPaying;
   const hasOrders = dbOrders.length > 0;
 
   const handleCallStaff = async () => {
@@ -149,12 +154,13 @@ export default function OrdersPage() {
     if (!tableId || isCancellingBill) return;
     setIsCancellingBill(true);
     try {
-      const res = await UpdateTableStatusCustomer({
+      const res = await CancelBillRequestCustomer({
         tableId,
-        status: "occupied",
       });
       if (res.success) {
-        toast.success("Request bill cancelled. You can continue ordering.");
+        toast.success(
+          res.message ?? "Request bill cancelled. You can continue ordering.",
+        );
         startTransition(() => {
           router.refresh();
         });
@@ -207,33 +213,45 @@ export default function OrdersPage() {
                 Staff has been notified. They will arrive shortly.
               </p>
             </div>
-            <motion.button
-              whileTap={!isCancellingStaff ? { scale: 0.97 } : {}}
-              onClick={handleCancelCallStaff}
-              disabled={isCancellingStaff}
-              className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isCancellingStaff ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <X className="w-4 h-4" />
-              )}
-              {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
-            </motion.button>
+            {isCallStaffDisabled ? null : (
+              <motion.button
+                whileTap={!isCancellingStaff ? { scale: 0.97 } : {}}
+                onClick={handleCancelCallStaff}
+                disabled={isCancellingStaff}
+                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isCancellingStaff ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <X className="w-4 h-4" />
+                )}
+                {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
+              </motion.button>
+            )}
           </div>
         ) : (
           <motion.button
-            whileTap={!isCallingStaff ? { scale: 0.97 } : {}}
+            whileTap={
+              !isCallingStaff && !isCallStaffDisabled ? { scale: 0.97 } : {}
+            }
             onClick={handleCallStaff}
-            disabled={isCallingStaff}
-            className="w-full bg-white border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={isCallingStaff || isCallStaffDisabled}
+            className={`w-full rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${
+              isCallStaffDisabled
+                ? "bg-cream-dark border-[1.5px] border-black/8 text-text-hint cursor-not-allowed"
+                : "bg-white border-[1.5px] border-clay text-clay active:bg-clay-light"
+            }`}
           >
             {isCallingStaff ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
               <Phone className="w-4 h-4" />
             )}
-            {isCallingStaff ? "Calling…" : "Call staff"}
+            {isCallStaffDisabled
+              ? "Staff assistance unavailable"
+              : isCallingStaff
+                ? "Calling…"
+                : "Call staff"}
           </motion.button>
         )}
 
@@ -248,25 +266,42 @@ export default function OrdersPage() {
 
         {isRequestBillActive ? (
           <div className="flex flex-col gap-2">
-            <div className="bg-gold-light rounded-2xl p-3.5 text-center">
-              <p className="text-[13px] font-medium text-[#9A6C10]">
-                <Receipt className="w-4 h-4 inline mr-1.5" />
-                Bill requested. Staff is preparing your bill.
-              </p>
-            </div>
-            <motion.button
-              whileTap={!isCancellingBill ? { scale: 0.97 } : {}}
-              onClick={handleCancelRequestBill}
-              disabled={isCancellingBill}
-              className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            <div
+              className={`rounded-2xl p-3.5 text-center ${
+                isPaying ? "bg-cream-dark" : "bg-gold-light"
+              }`}
             >
-              {isCancellingBill ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <X className="w-4 h-4" />
+              <p
+                className={`text-[13px] font-medium ${
+                  isPaying ? "text-text-primary" : "text-[#9A6C10]"
+                }`}
+              >
+                <Receipt className="w-4 h-4 inline mr-1.5" />
+                {isPaying
+                  ? "Payment in progress. Staff is processing your payment."
+                  : "Bill requested. Staff is preparing your bill."}
+              </p>
+              {!isPaying && !canCancelBillRequest && (
+                <p className="text-[11px] text-[#9A6C10]/70 mt-1">
+                  Contact staff if you need to make changes.
+                </p>
               )}
-              {isCancellingBill ? "Cancelling…" : "Cancel request bill"}
-            </motion.button>
+            </div>
+            {canCancelBillRequest && (
+              <motion.button
+                whileTap={!isCancellingBill ? { scale: 0.97 } : {}}
+                onClick={handleCancelRequestBill}
+                disabled={isCancellingBill}
+                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isCancellingBill ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <X className="w-4 h-4" />
+                )}
+                {isCancellingBill ? "Cancelling…" : "Cancel request bill"}
+              </motion.button>
+            )}
           </div>
         ) : (
           <motion.button

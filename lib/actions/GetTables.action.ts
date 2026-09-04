@@ -33,13 +33,24 @@ async function GetTables({
       prisma.table.findMany({
         where: { branchId },
         include: { zone: true },
+        orderBy: [
+          {
+            zone: {
+              createdAt: "asc",
+            },
+          },
+          {
+            tableNumber: "asc",
+          },
+        ],
       }),
 
       prisma.zone.findMany({
         where: { branchId },
-        orderBy: {
-          name: "asc",
-        },
+        orderBy: [
+          { createdAt: "asc" },
+          { name: "asc" },
+        ],
       }),
     ]);
     return {
