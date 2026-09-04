@@ -31,6 +31,7 @@ type BurgerSideMenuProps = {
   branch: CustomerBranchInfo;
   table: CustomerTableInfo;
   tableId: string | null;
+  sessionStatus: "seated" | "ordering" | "dining" | "finishedEating" | "paying";
   sessionElapsed: string;
   orderedItemCount: number;
   orderedTotal: number;
@@ -52,6 +53,7 @@ function BurgerSideMenu({
   branch,
   table,
   tableId,
+  sessionStatus,
   sessionElapsed,
   orderedItemCount,
   orderedTotal,
@@ -177,6 +179,11 @@ function BurgerSideMenu({
 
   const isRequestBillActive = table.status === "request_bill";
   const isNeedAttentionActive = table.status === "need_attention";
+  const canCancelBillRequest =
+    isRequestBillActive && sessionStatus === "finishedEating";
+  const isPaying = sessionStatus === "paying";
+  const isFinishedEating = sessionStatus === "finishedEating";
+  const isCallStaffDisabled = isFinishedEating || isPaying;
 
   return (
     <>
@@ -268,54 +275,81 @@ function BurgerSideMenu({
                   Staff has been notified. They will arrive shortly.
                 </p>
               </div>
-              <button
-                onClick={handleCancelCallStaff}
-                disabled={isCancellingStaff}
-                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isCancellingStaff ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <X className="w-4 h-4" />
-                )}
-                {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
-              </button>
+              {isCallStaffDisabled ? null : (
+                <button
+                  onClick={handleCancelCallStaff}
+                  disabled={isCancellingStaff}
+                  className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isCancellingStaff ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <X className="w-4 h-4" />
+                  )}
+                  {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
+                </button>
+              )}
             </div>
           ) : (
             <button
               onClick={handleCallStaff}
-              disabled={isCallingStaff}
-              className="w-full bg-white border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isCallingStaff || isCallStaffDisabled}
+              className={`w-full rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${
+                isCallStaffDisabled
+                  ? "bg-cream-dark border-[1.5px] border-black/8 text-text-hint cursor-not-allowed"
+                  : "bg-white border-[1.5px] border-clay text-clay active:bg-clay-light"
+              }`}
             >
               {isCallingStaff ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Phone className="w-4 h-4" />
               )}
-              {isCallingStaff ? "Calling…" : "Call staff"}
+              {isCallStaffDisabled
+                ? "Staff assistance unavailable"
+                : isCallingStaff
+                  ? "Calling…"
+                  : "Call staff"}
             </button>
           )}
 
           {isRequestBillActive ? (
             <div className="flex flex-col gap-2">
-              <div className="bg-gold-light rounded-2xl p-3.5 text-center">
-                <p className="text-[13px] font-medium text-[#9A6C10]">
-                  <Receipt className="w-4 h-4 inline mr-1.5" />
-                  Bill requested. Staff is preparing your bill.
-                </p>
-              </div>
-              <button
-                onClick={handleCancelRequestBill}
-                disabled={isCancellingBill}
-                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              <div
+                className={`rounded-2xl p-3.5 text-center ${
+                  isPaying ? "bg-cream-dark" : "bg-gold-light"
+                }`}
               >
-                {isCancellingBill ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <X className="w-4 h-4" />
+                <p
+                  className={`text-[13px] font-medium ${
+                    isPaying ? "text-text-primary" : "text-[#9A6C10]"
+                  }`}
+                >
+                  <Receipt className="w-4 h-4 inline mr-1.5" />
+                  {isPaying
+                    ? "Payment in progress"
+                    : "Bill requested. Staff is preparing your bill."}
+                </p>
+                {!isPaying && !canCancelBillRequest && (
+                  <p className="text-[11px] text-[#9A6C10]/70 mt-1">
+                    Contact staff if you need to make changes.
+                  </p>
                 )}
-                {isCancellingBill ? "Cancelling…" : "Cancel request bill"}
-              </button>
+              </div>
+              {canCancelBillRequest && (
+                <button
+                  onClick={handleCancelRequestBill}
+                  disabled={isCancellingBill}
+                  className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isCancellingBill ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <X className="w-4 h-4" />
+                  )}
+                  {isCancellingBill ? "Cancelling…" : "Cancel request bill"}
+                </button>
+              )}
             </div>
           ) : (
             <button

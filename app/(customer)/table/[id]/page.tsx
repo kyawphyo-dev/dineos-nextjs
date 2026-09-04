@@ -29,6 +29,9 @@ export default function LandingPage() {
   const [isCancellingStaff, setIsCancellingStaff] = useState(false);
 
   const isNeedAttentionActive = table.status === "need_attention";
+  const isFinishedEating = session?.status === "finishedEating";
+  const isPaying = session?.status === "paying";
+  const isCallStaffDisabled = isFinishedEating || isPaying;
 
   useEffect(() => {
     setTableId(tableId);
@@ -167,33 +170,45 @@ export default function LandingPage() {
                   Staff has been notified. They will arrive shortly.
                 </p>
               </div>
-              <motion.button
-                whileTap={!isCancellingStaff ? { scale: 0.97 } : {}}
-                onClick={handleCancelCallStaff}
-                disabled={isCancellingStaff}
-                className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {isCancellingStaff ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <X className="w-4 h-4" />
-                )}
-                {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
-              </motion.button>
+              {isCallStaffDisabled ? null : (
+                <motion.button
+                  whileTap={!isCancellingStaff ? { scale: 0.97 } : {}}
+                  onClick={handleCancelCallStaff}
+                  disabled={isCancellingStaff}
+                  className="w-full bg-white border-[1.5px] border-text-hint text-text-primary rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-cream-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isCancellingStaff ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <X className="w-4 h-4" />
+                  )}
+                  {isCancellingStaff ? "Cancelling…" : "Cancel call staff"}
+                </motion.button>
+              )}
             </div>
           ) : (
             <motion.button
-              whileTap={!isCallingStaff ? { scale: 0.97 } : {}}
+              whileTap={
+                !isCallingStaff && !isCallStaffDisabled ? { scale: 0.97 } : {}
+              }
               onClick={handleCallStaff}
-              disabled={isCallingStaff}
-              className="w-full bg-white border-[1.5px] border-clay text-clay rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 active:bg-clay-light transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={isCallingStaff || isCallStaffDisabled}
+              className={`w-full rounded-2xl py-3 text-[14px] font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed ${
+                isCallStaffDisabled
+                  ? "bg-cream-dark border-[1.5px] border-black/8 text-text-hint cursor-not-allowed"
+                  : "bg-white border-[1.5px] border-clay text-clay active:bg-clay-light"
+              }`}
             >
               {isCallingStaff ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <Phone className="w-4 h-4" />
               )}
-              {isCallingStaff ? "Calling…" : "Call staff"}
+              {isCallStaffDisabled
+                ? "Staff assistance unavailable"
+                : isCallingStaff
+                  ? "Calling…"
+                  : "Call staff"}
             </motion.button>
           )}
         </div>

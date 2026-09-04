@@ -1,6 +1,6 @@
 "use client";
 
-import { Receipt, QrCode, X, Loader2 } from "lucide-react";
+import { Receipt, QrCode, X, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import type { FrontTable } from "@/app/types/staff";
 import { useState } from "react";
@@ -8,16 +8,17 @@ import { useState } from "react";
 interface Props {
   table: FrontTable;
   onCancelRequestBill?: (tableNumber: string) => void;
-  onCloseSession?: (sessionId: string, tableNumber: string) => void;
+  onCleaning?: (tableNumber: string) => void;
 }
 
 export default function RequestBillCard({
   table,
   onCancelRequestBill,
-  onCloseSession,
+  onCleaning,
 }: Props) {
   const session = table.session;
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -35,21 +36,27 @@ export default function RequestBillCard({
     onCancelRequestBill(table.id);
   };
 
+  const handleCleaning = () => {
+    if (!onCleaning || isCleaning) return;
+    setIsCleaning(true);
+    onCleaning(table.id);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="bg-white rounded-2xl border border-purple-300 p-5"
+      className="bg-white rounded-2xl border border-yellow-300 p-5"
     >
-      <div className="bg-purple-100 rounded-xl p-3.5 mb-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-purple-500 flex items-center justify-center shrink-0">
+      <div className="bg-yellow-100/50 rounded-xl p-3.5 mb-4 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-yellow-500 flex items-center justify-center shrink-0">
           <Receipt className="w-5 h-5 text-white" />
         </div>
         <div>
-          <p className="text-[14px] font-semibold text-purple-700">
+          <p className="text-[14px] font-semibold text-yellow-700">
             Bill requested
           </p>
-          <p className="text-[11px] text-purple-500 mt-0.5">
+          <p className="text-[11px] text-yellow-500 mt-0.5">
             Customer wants to pay
           </p>
         </div>
@@ -98,13 +105,23 @@ export default function RequestBillCard({
             </>
           )}
         </button>
-        {onCloseSession && session && (
+        {onCleaning && (
           <button
-            onClick={() => onCloseSession(session.id, table.id)}
-            className="w-full bg-clay text-white rounded-xl py-3 text-[13px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors"
+            onClick={handleCleaning}
+            disabled={isCleaning}
+            className="w-full bg-gray-600 text-white rounded-xl py-3 text-[13px] font-medium flex items-center justify-center gap-2 active:bg-gray-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            <Receipt className="w-4 h-4" />
-            Proceed to close session / bill
+            {isCleaning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Marking cleaning…
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Mark as cleaning
+              </>
+            )}
           </button>
         )}
       </div>

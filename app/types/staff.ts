@@ -1,6 +1,6 @@
 // Front-staff types (table grid, sessions, reservations)
 
-export type TableStatus = "available" | "occupied" | "attention" | "reserved" | "need_attention" | "request_bill";
+export type TableStatus = "available" | "occupied" | "attention" | "reserved" | "need_attention" | "request_bill" | "cleaning";
 
 export type StaffPackage = {
   id: string;

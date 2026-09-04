@@ -43,7 +43,7 @@ async function CloseDiningSession(params: CloseDiningSessionParams) {
 
       const updatedTable = await tx.table.update({
         where: { id: table.id },
-        data: { status: "cleaning" },
+        data: { status: "request_bill" },
       });
 
       const updatedReservation = updatedSession.reservationId

@@ -50,7 +50,8 @@ async function CancelBillRequestCustomer(params: { tableId: string }) {
     if ((table.status as unknown as string) !== "request_bill") {
       return {
         success: false,
-        message: "Cannot cancel bill request — no bill request is active for this table.",
+        message:
+          "Cannot cancel bill request — no bill request is active for this table.",
         details: null,
       };
     }
@@ -85,18 +86,16 @@ async function CancelBillRequestCustomer(params: { tableId: string }) {
       };
     }
 
-    if (
-      activeSession.status === "paying" ||
-      activeSession.status === "completed" ||
-      activeSession.status === "cancelled"
-    ) {
+    if (activeSession.status !== "finishedEating") {
       const statusLabel: Record<string, string> = {
-        paying: "payment is in progress",
+        seated: "you are still in the dining session",
+        ordering: "ordering is still in progress",
+        dining: "your dining is still in progress",
+        paying: "payment is already in progress",
         completed: "your dining has been completed",
         cancelled: "your session has been cancelled",
       };
-      const reason =
-        statusLabel[activeSession.status] ?? "this session stage";
+      const reason = statusLabel[activeSession.status] ?? "this session stage";
       return {
         success: false,
         message: `Cannot cancel bill request — ${reason}. Please contact staff if you need assistance.`,

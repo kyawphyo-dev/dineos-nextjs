@@ -52,6 +52,16 @@ export async function getStaffTables() {
           take: 1,
         },
       },
+      orderBy: [
+        {
+          zone: {
+            createdAt: "asc",
+          },
+        },
+        {
+          tableNumber: "asc",
+        },
+      ],
     });
 
     return {

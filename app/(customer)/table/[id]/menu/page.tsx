@@ -22,7 +22,7 @@ import {
   ALL_CATEGORY,
   type LanguageCode,
 } from "@/components/customer/customerMenu.utils";
-import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
+import CancelBillRequestCustomer from "@/lib/actions/customer/CancelBillRequestCustomer.action";
 
 export default function MenuPage() {
   const router = useRouter();
@@ -67,12 +67,13 @@ export default function MenuPage() {
     if (!tableId || isCancellingBill) return;
     setIsCancellingBill(true);
     try {
-      const res = await UpdateTableStatusCustomer({
+      const res = await CancelBillRequestCustomer({
         tableId,
-        status: "occupied",
       });
       if (res.success) {
-        toast.success("Request bill cancelled. You can continue ordering.");
+        toast.success(
+          res.message ?? "Request bill cancelled. You can continue ordering.",
+        );
         router.refresh();
       } else {
         toast.error(res.message ?? "Failed to cancel request bill.");
@@ -102,6 +103,7 @@ export default function MenuPage() {
   const orderingDisabled = !isSessionOrderable || isRequestBillActive;
   const isFinishedEating = session.status === "finishedEating";
   const isPaying = session.status === "paying";
+  const canCancelBillRequest = isRequestBillActive && isFinishedEating;
 
   const allCategoryNames = useMemo(
     () => [ALL_CATEGORY, ...categories.map((c) => c.name)],
@@ -224,25 +226,52 @@ export default function MenuPage() {
                 <Receipt className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium text-[#9A6C10]">
-                  Bill requested
-                </p>
-                <p className="text-[11px] text-[#9A6C10]/70 mt-0.5">
-                  Staff is preparing your bill. Ordering is disabled.
-                </p>
-              </div>
-              <button
-                onClick={handleCancelRequestBill}
-                disabled={isCancellingBill}
-                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#9A6C10]/30 text-[12px] font-medium text-[#9A6C10] active:bg-[#9A6C10]/10 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
-              >
-                {isCancellingBill ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                {isPaying ? (
+                  <>
+                    <p className="text-[13px] font-medium text-[#9A6C10]">
+                      Payment in progress
+                    </p>
+                    <p className="text-[11px] text-[#9A6C10]/70 mt-0.5">
+                      Staff is processing your payment. Contact staff if you
+                      need help.
+                    </p>
+                  </>
+                ) : canCancelBillRequest ? (
+                  <>
+                    <p className="text-[13px] font-medium text-[#9A6C10]">
+                      Bill requested
+                    </p>
+                    <p className="text-[11px] text-[#9A6C10]/70 mt-0.5">
+                      Staff is preparing your bill. You can cancel before
+                      payment starts.
+                    </p>
+                  </>
                 ) : (
-                  <X className="w-3.5 h-3.5" />
+                  <>
+                    <p className="text-[13px] font-medium text-[#9A6C10]">
+                      Bill requested
+                    </p>
+                    <p className="text-[11px] text-[#9A6C10]/70 mt-0.5">
+                      Staff has been notified. Contact staff if you need to make
+                      changes.
+                    </p>
+                  </>
                 )}
-                Cancel
-              </button>
+              </div>
+              {canCancelBillRequest && (
+                <button
+                  onClick={handleCancelRequestBill}
+                  disabled={isCancellingBill}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-[#9A6C10]/30 text-[12px] font-medium text-[#9A6C10] active:bg-[#9A6C10]/10 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isCancellingBill ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <X className="w-3.5 h-3.5" />
+                  )}
+                  Cancel
+                </button>
+              )}
             </div>
           </motion.div>
         )}
@@ -339,6 +368,7 @@ export default function MenuPage() {
             branch={branch}
             table={table}
             tableId={tableId}
+            sessionStatus={session.status}
             sessionElapsed={sessionElapsed}
             orderedItemCount={orderedItemCount}
             orderedTotal={orderedTotal}
