@@ -21,15 +21,8 @@ import type {
 
 export default function CashierDashboard() {
   const router = useRouter();
-  const {
-    sessions,
-    restaurant,
-    branch,
-    getSession,
-    markFinishedEating,
-    createBill,
-    closeSession,
-  } = useCashierSessions();
+  const { sessions, restaurant, branch, getSession, createBill, closeSession } =
+    useCashierSessions();
   const [isCreatingBill, startCreateBillTransition] = useTransition();
   const [createBillError, setCreateBillError] = useState<string | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
@@ -60,8 +53,17 @@ export default function CashierDashboard() {
     setBillCreated(false);
   };
 
+  const canCreateBill =
+    !!selectedSession && selectedSession.status === "finished";
+
   const handleCreateBill = async () => {
     if (!selectedSession) return;
+    if (!canCreateBill) {
+      setCreateBillError(
+        "Bill can only be created when the table has finished eating.",
+      );
+      return;
+    }
     setCreateBillError(null);
 
     startCreateBillTransition(async () => {
@@ -75,10 +77,6 @@ export default function CashierDashboard() {
         );
       }
     });
-  };
-
-  const handleMarkFinishedEating = async (tableId: string) => {
-    await markFinishedEating(tableId);
   };
 
   const hasServerBill = !!selectedSession?.billId;
@@ -132,9 +130,6 @@ export default function CashierDashboard() {
                   session={session}
                   selected={selectedTableId === session.tableId}
                   onClick={() => handleSelect(session.tableId)}
-                  onMarkFinished={() =>
-                    handleMarkFinishedEating(session.tableId)
-                  }
                 />
               ))}
               {sessions.length === 0 && (
@@ -154,67 +149,79 @@ export default function CashierDashboard() {
                   onClose={handleCloseSession}
                 />
               ) : !showPaymentFlow ? (
-                <>
-                  <BillSummary session={selectedSession} discount={discount} />
-                  <DiscountControls
-                    discount={discount}
-                    onChange={setDiscount}
-                  />
+                canCreateBill ? (
+                  <>
+                    <BillSummary
+                      session={selectedSession}
+                      discount={discount}
+                    />
+                    <DiscountControls
+                      discount={discount}
+                      onChange={setDiscount}
+                    />
 
-                  {createBillError && (
-                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-600">
-                      {createBillError}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={handleCreateBill}
-                    disabled={isCreatingBill}
-                    className="w-full bg-bark text-white rounded-xl py-3 text-[14px] font-medium active:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isCreatingBill ? (
-                      <>
-                        <svg
-                          className="w-4 h-4 animate-spin"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                          />
-                        </svg>
-                        Creating bill…
-                      </>
-                    ) : (
-                      <>
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        Create bill
-                      </>
+                    {createBillError && (
+                      <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-[12px] text-rose-600">
+                        {createBillError}
+                      </div>
                     )}
-                  </button>
-                </>
+
+                    <button
+                      onClick={handleCreateBill}
+                      disabled={isCreatingBill}
+                      className="w-full bg-bark text-white rounded-xl py-3 text-[14px] font-medium active:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isCreatingBill ? (
+                        <>
+                          <svg
+                            className="w-4 h-4 animate-spin"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            />
+                          </svg>
+                          Creating bill…
+                        </>
+                      ) : (
+                        <>
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          Create bill
+                        </>
+                      )}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <BillSummary
+                      session={selectedSession}
+                      discount={discount}
+                    />
+                  </>
+                )
               ) : (
                 <>
                   <BillSummary session={selectedSession} discount={discount} />
