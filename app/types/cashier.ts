@@ -1,6 +1,6 @@
 // Cashier types (dining sessions, billing, discounts, receipts)
 
-export type SessionStatus = "dining" | "finished" | "billed";
+export type SessionStatus = "dining" | "paying" | "finished" | "billed";
 
 export type PaymentMethod = "cash" | "card" | "qr";
 

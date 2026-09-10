@@ -8,7 +8,6 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { INITIAL_RECEIPTS } from "@/app/data/cashier-mock";
 import type {
   DiningSession,
   Discount,
@@ -39,8 +38,6 @@ interface CashierSessionsContextValue extends CashierSessionResult {
 const CashierSessionsContext = createContext<
   CashierSessionsContextValue | undefined
 >(undefined);
-
-let receiptCounter = 5001;
 
 export default function CashierSessionProvider({
   value,

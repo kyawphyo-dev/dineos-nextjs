@@ -22,7 +22,7 @@ export type CashierLineItem = {
   orderId: string;
 };
 
-export type CashierSessionStatus = "dining" | "finished" | "billed";
+export type CashierSessionStatus = "dining" | "finished" | "billed" | "paying";
 
 export type CashierDiningSession = {
   sessionId: string;
@@ -60,10 +60,11 @@ function mapDiningStatusToCashier(status: string): CashierSessionStatus {
       return "finished";
     case "completed":
       return "billed";
+    case "paying":
+      return "paying";
     case "seated":
     case "ordering":
     case "dining":
-    case "paying":
     default:
       return "dining";
   }
