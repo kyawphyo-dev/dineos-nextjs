@@ -57,7 +57,15 @@ export default function CashierSessionProvider({
   const [receipts, setReceipts] = useState<ReceiptRecord[]>(initialReceipts);
 
   if (value.sessions !== sessionsPropSnapshot) {
-    setSessions(value.sessions);
+    setSessions((prevLocal) => {
+      const incomingIds = new Set(value.sessions.map((s) => s.tableId));
+      const localBilledStale = prevLocal.filter(
+        (localSession) =>
+          localSession.status === "billed" &&
+          !incomingIds.has(localSession.tableId),
+      );
+      return [...value.sessions, ...localBilledStale];
+    });
     setSessionsPropSnapshot(value.sessions);
   }
 
@@ -218,6 +226,9 @@ export function useSessions() {
   return useCashierSessions();
 }
 
+export const SERVICE_CHARGE_RATE = 5;
+export const TAX_RATE = 7;
+
 export function calculateBill(
   session: DiningSession,
   discount: Discount | null,
@@ -233,8 +244,12 @@ export function calculateBill(
         ? Math.round(subtotal * (discount.value / 100))
         : discount.value;
   }
-  const total = Math.max(0, subtotal - discountAmount);
-  return { subtotal, discountAmount, total };
+  const afterDiscount = Math.max(0, subtotal - discountAmount);
+  const serviceCharge = Math.round(afterDiscount * (SERVICE_CHARGE_RATE / 100));
+  const afterService = afterDiscount + serviceCharge;
+  const tax = Math.round(afterService * (TAX_RATE / 100));
+  const grandTotal = afterService + tax;
+  return { subtotal, discountAmount, serviceCharge, tax, grandTotal };
 }
 
 export function toLocalISODate(date: Date): string {

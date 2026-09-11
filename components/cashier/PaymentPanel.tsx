@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useMemo } from "react";
 import {
   Banknote,
   CreditCard,
@@ -11,11 +11,15 @@ import {
   Check,
   Loader2,
   AlertCircle,
+  Calculator,
+  Wallet,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   useCashierSessions,
   calculateBill,
+  SERVICE_CHARGE_RATE,
+  TAX_RATE,
 } from "@/context/CashierSessionContext";
 import type {
   PaymentMethod,
@@ -31,6 +35,7 @@ type InternalPaymentSplit = {
   id: string;
   method: PaymentMethod;
   amount: number;
+  referenceNo?: string;
 };
 
 const METHODS: { id: PaymentMethod; label: string; icon: typeof Banknote }[] = [
@@ -38,6 +43,8 @@ const METHODS: { id: PaymentMethod; label: string; icon: typeof Banknote }[] = [
   { id: "card", label: "Card", icon: CreditCard },
   { id: "qr", label: "QR Pay", icon: QrCode },
 ];
+
+const QUICK_CASH_PRESETS = [100, 200, 500, 1000];
 
 interface Props {
   selected: PaymentMethod;
@@ -65,6 +72,11 @@ const initialModalState: DemoModalState = {
   qrCountdown: 3,
 };
 
+function generateRefNo(method: PaymentMethod, seed: number, suffix?: string): string | undefined {
+  if (method === "cash") return undefined;
+  return `DEMO-${seed}-${suffix ?? Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+}
+
 export default function PaymentPanel({
   selected,
   onSelect,
@@ -80,16 +92,41 @@ export default function PaymentPanel({
     { id: crypto.randomUUID(), method: "cash", amount: 0 },
     { id: crypto.randomUUID(), method: "card", amount: 0 },
   ]);
+  const [tenderedAmount, setTenderedAmount] = useState<number>(0);
   const [isSubmitting, startSubmittingTransition] = useTransition();
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modal, setModal] = useState<DemoModalState>(initialModalState);
+
+  const breakdown = useMemo(() => calculateBill(session, discount), [session, discount]);
+
+  const grandTotal = session.billGrandTotal ?? breakdown.grandTotal ?? total;
+  const subtotal = session.billSubtotal ?? breakdown.subtotal;
+  const discountAmount = session.billDiscount ?? breakdown.discountAmount;
+  const serviceCharge = breakdown.serviceCharge;
+  const tax = breakdown.tax;
 
   const paymentSplitsTotal = paymentSplits.reduce(
     (sum, p) => sum + p.amount,
     0,
   );
-  const isPaymentBalanced = paymentSplitsTotal === total;
-  const paymentDifference = total - paymentSplitsTotal;
+  const isPaymentBalanced = paymentSplitsTotal === grandTotal;
+  const paymentDifference = grandTotal - paymentSplitsTotal;
+
+  const changeDue = Math.max(0, tenderedAmount - grandTotal);
+  const tenderedInsufficient = tenderedAmount > 0 && tenderedAmount < grandTotal;
+  const tenderedIsValid = tenderedAmount >= grandTotal;
+
+  useEffect(() => {
+    if (modal.kind === "qr" && modal.qrCountdown > 0) {
+      const timer = setTimeout(() => {
+        setModal((prev) => ({
+          ...prev,
+          qrCountdown: Math.max(0, prev.qrCountdown - 1),
+        }));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [modal.kind, modal.qrCountdown]);
 
   const handlePaymentSplitChange = (
     id: string,
@@ -113,23 +150,23 @@ export default function PaymentPanel({
     setPaymentSplits((prev) => prev.filter((p) => p.id !== id));
   };
 
-  useEffect(() => {
-    if (modal.kind === "qr" && modal.qrCountdown > 0) {
-      const timer = setTimeout(() => {
-        setModal((prev) => ({
-          ...prev,
-          qrCountdown: Math.max(0, prev.qrCountdown - 1),
-        }));
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [modal.kind, modal.qrCountdown]);
-
   const getEffectiveSplits = (): InternalPaymentSplit[] => {
     if (mode === "single") {
-      return [{ id: crypto.randomUUID(), method: selected, amount: total }];
+      const seed = Date.now();
+      const ref = generateRefNo(selected, seed);
+      return [{
+        id: crypto.randomUUID(),
+        method: selected,
+        amount: grandTotal,
+        referenceNo: ref,
+      }];
     }
-    return paymentSplits.filter((s) => s.amount > 0);
+    return paymentSplits
+      .filter((s) => s.amount > 0)
+      .map((s, idx) => ({
+        ...s,
+        referenceNo: s.referenceNo ?? generateRefNo(s.method, Date.now(), String(idx + 1)),
+      }));
   };
 
   const findNextDemoIndex = (splits: InternalPaymentSplit[]): number => {
@@ -147,10 +184,7 @@ export default function PaymentPanel({
         const payments: PaymentSplit[] = finalSplits.map((s) => ({
           method: s.method,
           amount: s.amount,
-          referenceNo:
-            s.method === "qr" || s.method === "card"
-              ? `DEMO-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-              : undefined,
+          referenceNo: s.referenceNo,
         }));
 
         const receipt = await recordPayment(session.tableId, discount, payments);
@@ -207,6 +241,11 @@ export default function PaymentPanel({
   };
 
   const handleConfirmSingle = () => {
+    if (grandTotal === 0) return;
+    if (selected === "cash" && !tenderedIsValid) {
+      setErrorMsg("Tendered amount must be at least the grand total.");
+      return;
+    }
     const splits = getEffectiveSplits();
     advanceThroughDemoFlowIfNeeded(splits);
   };
@@ -225,12 +264,6 @@ export default function PaymentPanel({
     modal.kind && modal.pendingSplits[modal.targetIndex]
       ? modal.pendingSplits[modal.targetIndex]
       : null;
-
-  const { subtotal, discountAmount } = calculateBill(session, discount);
-  const afterDiscount = Math.max(0, subtotal - discountAmount);
-  const serviceCharge = Math.round(afterDiscount * 0.05);
-  const tax = Math.round((afterDiscount + serviceCharge) * 0.07);
-  const breakdownTotal = afterDiscount + serviceCharge + tax;
 
   return (
     <>
@@ -288,14 +321,14 @@ export default function PaymentPanel({
               )}
               <div className="flex justify-between text-[12px]">
                 <span className="text-text-muted">
-                  Service charge (5%)
+                  Service charge ({SERVICE_CHARGE_RATE}%)
                 </span>
                 <span className="font-medium text-text-primary">
                   ฿{serviceCharge.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between text-[12px]">
-                <span className="text-text-muted">VAT (7%)</span>
+                <span className="text-text-muted">VAT ({TAX_RATE}%)</span>
                 <span className="font-medium text-text-primary">
                   ฿{tax.toLocaleString()}
                 </span>
@@ -306,7 +339,7 @@ export default function PaymentPanel({
                   Grand total
                 </span>
                 <span className="font-bold text-text-primary">
-                  ฿{Math.max(total, breakdownTotal).toLocaleString()}
+                  ฿{grandTotal.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -332,10 +365,118 @@ export default function PaymentPanel({
               })}
             </div>
 
+            {selected === "cash" && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: "auto", marginBottom: 16 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="rounded-xl border border-clay/30 bg-clay/5 p-4 overflow-hidden"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <Calculator className="w-4 h-4 text-clay" />
+                  <p className="text-[13px] font-medium text-text-primary">
+                    Cash tendered
+                  </p>
+                </div>
+
+                <div className="flex items-center mb-3 bg-white rounded-md border border-black/10 pl-3 pr-2 py-2">
+                  <span className="text-[14px] text-text-hint mr-1.5">฿</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={tenderedAmount || ""}
+                    onChange={(e) =>
+                      setTenderedAmount(Number(e.target.value) || 0)
+                    }
+                    onFocus={() =>
+                      setTenderedAmount((v) =>
+                        v === 0 ? grandTotal : v,
+                      )
+                    }
+                    placeholder="Enter amount received"
+                    className="w-full text-[14px] font-medium text-text-primary outline-none bg-transparent placeholder:text-text-hint"
+                  />
+                  <button
+                    onClick={() => setTenderedAmount(grandTotal)}
+                    className="text-[11px] text-clay font-medium px-2 py-1 rounded-md hover:bg-clay/10 transition-colors flex-shrink-0"
+                  >
+                    Exact
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-4 gap-1.5 mb-3">
+                  {QUICK_CASH_PRESETS.map((preset) => {
+                    const withPreset = grandTotal + preset;
+                    const rounded = Math.ceil(grandTotal / preset) * preset;
+                    return (
+                      <button
+                        key={preset}
+                        onClick={() => setTenderedAmount(rounded)}
+                        className="rounded-md bg-white border border-black/10 py-1.5 text-[11px] font-medium text-text-muted hover:text-clay hover:border-clay/40 transition-colors"
+                      >
+                        ฿{preset.toLocaleString()}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="rounded-lg bg-white border border-black/8 p-3 space-y-1.5">
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-text-muted">Grand total</span>
+                    <span className="font-medium text-text-primary">
+                      ฿{grandTotal.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[12px]">
+                    <span className="text-text-muted flex items-center gap-1">
+                      <Wallet className="w-3 h-3" />
+                      Tendered
+                    </span>
+                    <span
+                      className={`font-medium ${
+                        tenderedInsufficient
+                          ? "text-rose-500"
+                          : "text-text-primary"
+                      }`}
+                    >
+                      ฿{tenderedAmount.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="h-px bg-black/8" />
+                  <div className="flex justify-between text-[13px]">
+                    <span className="text-text-muted font-semibold">
+                      Change due
+                    </span>
+                    <span
+                      className={`font-bold ${
+                        changeDue > 0
+                          ? "text-success"
+                          : tenderedAmount === 0
+                          ? "text-text-hint"
+                          : "text-text-primary"
+                      }`}
+                    >
+                      {tenderedAmount === 0
+                        ? "—"
+                        : changeDue > 0
+                        ? `+฿${changeDue.toLocaleString()}`
+                        : tenderedInsufficient
+                        ? `Short ฿${Math.abs(changeDue - grandTotal + tenderedAmount).toLocaleString()}`
+                        : "฿0"}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={handleConfirmSingle}
-              disabled={isSubmitting || total === 0}
+              disabled={
+                isSubmitting ||
+                grandTotal === 0 ||
+                (selected === "cash" && tenderedAmount > 0 && !tenderedIsValid)
+              }
               className="w-full bg-bark text-white rounded-xl py-3 text-[14px] font-medium active:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
@@ -344,7 +485,7 @@ export default function PaymentPanel({
                   Recording payment…
                 </>
               ) : (
-                <>Confirm payment · ฿{total.toLocaleString()}</>
+                <>Confirm payment · ฿{grandTotal.toLocaleString()}</>
               )}
             </motion.button>
           </div>
@@ -352,7 +493,7 @@ export default function PaymentPanel({
           <div>
             <p className="text-[11px] text-text-hint mb-3">
               Split bill grand total ฿
-              {Math.max(total, breakdownTotal).toLocaleString()} across multiple
+              {grandTotal.toLocaleString()} across multiple
               payment methods
             </p>
 
@@ -436,7 +577,7 @@ export default function PaymentPanel({
               <div className="flex justify-between text-[12px]">
                 <span className="text-text-muted">Grand total</span>
                 <span className="font-medium text-text-primary">
-                  ฿{Math.max(total, breakdownTotal).toLocaleString()}
+                  ฿{grandTotal.toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between text-[12px]">
@@ -492,7 +633,7 @@ export default function PaymentPanel({
               ) : (
                 <>
                   Confirm split payment · ฿
-                  {Math.max(total, breakdownTotal).toLocaleString()}
+                  {grandTotal.toLocaleString()}
                 </>
               )}
             </motion.button>
@@ -629,6 +770,11 @@ export default function PaymentPanel({
                   <p className="text-[11px] text-text-hint">
                     Table {session.tableId} · {session.packageName}
                   </p>
+                  {pendingSplit.referenceNo && (
+                    <p className="text-[10px] text-text-hint mt-2 font-mono">
+                      Ref: {pendingSplit.referenceNo}
+                    </p>
+                  )}
                 </div>
 
                 {modal.qrCountdown > 0 ? (
@@ -743,6 +889,14 @@ export default function PaymentPanel({
                       DEMO-POS-01
                     </span>
                   </div>
+                  {pendingSplit.referenceNo && (
+                    <div className="flex justify-between text-[12px] mb-2">
+                      <span className="text-text-muted">Auth ID</span>
+                      <span className="font-mono font-medium text-info">
+                        {pendingSplit.referenceNo}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-[12px]">
                     <span className="text-text-muted">Status</span>
                     <span className="font-medium text-info">

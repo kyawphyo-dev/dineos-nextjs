@@ -26,10 +26,11 @@ interface Props {
 }
 
 export default function SessionRow({ session, selected, onClick }: Props) {
-  const total = session.items.reduce(
+  const subtotal = session.items.reduce(
     (sum, item) => sum + item.qty * item.price,
     0,
   );
+  const total = session.billGrandTotal ?? subtotal;
   const badge = STATUS_BADGE[session.status] ?? STATUS_BADGE.dining;
 
   return (

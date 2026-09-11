@@ -13,6 +13,7 @@ import type {
   ReceiptRecord,
   LineItem,
   Discount,
+  ReceiptPayment,
 } from "@/app/types/cashier";
 
 type PaymentSplitInput = {
@@ -71,11 +72,7 @@ async function resolvePaymentMethodId(
   const created = await prisma.paymentMethod.create({
     data: {
       name:
-        uiMethod === "card"
-          ? "Card"
-          : uiMethod === "qr"
-          ? "QR Pay"
-          : "Cash",
+        uiMethod === "card" ? "Card" : uiMethod === "qr" ? "QR Pay" : "Cash",
       branchId,
     },
     select: { id: true },
@@ -106,7 +103,8 @@ async function RecordPayment(params: RecordPaymentParams) {
     if (!session?.user) {
       throw new Error("Unauthorized");
     }
-    const { id: cashierId } = session.user as authenticatedUser;
+    const { id: cashierId, name: cashierName } =
+      session.user as authenticatedUser;
 
     const table = await prisma.table.findUnique({
       where: {
@@ -138,7 +136,19 @@ async function RecordPayment(params: RecordPaymentParams) {
             },
           },
         },
-        bill: true,
+        bill: {
+          select: {
+            id: true,
+            subtotal: true,
+            discount: true,
+            serviceChargeRate: true,
+            serviceCharge: true,
+            taxRate: true,
+            tax: true,
+            grandTotal: true,
+            receiptNumber: true,
+          },
+        },
       },
     });
 
@@ -207,6 +217,10 @@ async function RecordPayment(params: RecordPaymentParams) {
           receiptNumber: true,
           subtotal: true,
           discount: true,
+          serviceChargeRate: true,
+          serviceCharge: true,
+          taxRate: true,
+          tax: true,
           grandTotal: true,
           paidAt: true,
         },
@@ -250,13 +264,16 @@ async function RecordPayment(params: RecordPaymentParams) {
 
     const subtotal = Number(result.updatedBill.subtotal);
     const discountRaw = Number(result.updatedBill.discount);
+    const serviceChargeRate = Number(result.updatedBill.serviceChargeRate);
+    const serviceCharge = Number(result.updatedBill.serviceCharge);
+    const taxRate = Number(result.updatedBill.taxRate);
+    const tax = Number(result.updatedBill.tax);
+    const grandTotal = Number(result.updatedBill.grandTotal);
+
     let discount: Discount | null = null;
     let discountAmount = 0;
 
     if (discountRaw > 0) {
-      const serviceCharge = Number(activeSession.bill.serviceCharge ?? 0);
-      const tax = Number(activeSession.bill.tax ?? 0);
-      const grandTotal = Number(result.updatedBill.grandTotal);
       const grossBeforeDiscount = grandTotal + discountRaw;
       const menuSubtotalPlusTaxes = subtotal + serviceCharge + tax;
 
@@ -284,9 +301,14 @@ async function RecordPayment(params: RecordPaymentParams) {
       ? mapPaymentMethodNameToUI(firstPaymentMethodName)
       : "cash";
 
+    const receiptPayments: ReceiptPayment[] = result.paymentRows.map((row) => ({
+      method: mapPaymentMethodNameToUI(row.paymentMethod.name),
+      amount: Number(row.amount),
+      referenceNo: row.referenceNo ?? undefined,
+    }));
+
     const paidAtDate =
       result.updatedBill.paidAt ?? new Date(result.updatedBill.id);
-    const total = Math.max(0, subtotal - discountAmount);
 
     const receipt: ReceiptRecord = {
       id: result.updatedBill.receiptNumber,
@@ -298,8 +320,14 @@ async function RecordPayment(params: RecordPaymentParams) {
       subtotal,
       discount,
       discountAmount,
-      total: total > 0 ? total : Number(result.updatedBill.grandTotal),
+      serviceChargeRate,
+      serviceCharge,
+      taxRate,
+      tax,
+      grandTotal,
+      total: grandTotal,
       method: uiMethod,
+      payments,
       paidAt: paidAtDate.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -310,6 +338,7 @@ async function RecordPayment(params: RecordPaymentParams) {
         year: "numeric",
       }),
       paidDateISO: toLocalISODate(paidAtDate),
+      cashierName: cashierName ?? undefined,
     };
 
     revalidatePath("/(cashier)", "layout");

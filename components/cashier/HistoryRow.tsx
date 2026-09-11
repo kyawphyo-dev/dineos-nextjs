@@ -36,7 +36,7 @@ export default function HistoryRow({ receipt, onClick }: Props) {
         </p>
       </div>
       <p className="text-[14px] font-medium text-text-primary flex-shrink-0">
-        ฿{receipt.total.toLocaleString()}
+        ฿{receipt.grandTotal.toLocaleString()}
       </p>
     </motion.button>
   );

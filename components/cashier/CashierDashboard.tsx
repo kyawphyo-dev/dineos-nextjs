@@ -23,6 +23,8 @@ export default function CashierDashboard() {
   const router = useRouter();
   const { sessions, restaurant, branch, getSession, createBill, closeSession } =
     useCashierSessions();
+  const activeSessions = sessions.filter((s) => s.status !== "billed");
+  const activeSessionCount = activeSessions.length;
   const [isCreatingBill, startCreateBillTransition] = useTransition();
   const [createBillError, setCreateBillError] = useState<string | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
@@ -82,9 +84,11 @@ export default function CashierDashboard() {
   const hasServerBill = !!selectedSession?.billId;
   const showPaymentFlow = billCreated || hasServerBill;
 
-  const billTotal = selectedSession
-    ? calculateBill(selectedSession, discount).total
-    : 0;
+  const billBreakdown = selectedSession
+    ? calculateBill(selectedSession, discount)
+    : null;
+  const billTotal =
+    selectedSession?.billGrandTotal ?? billBreakdown?.grandTotal ?? 0;
 
   return (
     <div className="min-h-screen bg-cream-dark">
@@ -102,7 +106,7 @@ export default function CashierDashboard() {
                 {restaurant.name}
                 {branch.name ? ` · ${branch.name}` : ""}
                 {" · "}
-                {sessions.length} active sessions
+                {activeSessionCount} active sessions
               </p>
             </div>
           </div>
@@ -124,7 +128,7 @@ export default function CashierDashboard() {
               Active dining sessions
             </p>
             <div className="flex flex-col gap-2">
-              {sessions.map((session) => (
+              {activeSessions.map((session) => (
                 <SessionRow
                   key={session.tableId}
                   session={session}
@@ -132,7 +136,7 @@ export default function CashierDashboard() {
                   onClick={() => handleSelect(session.tableId)}
                 />
               ))}
-              {sessions.length === 0 && (
+              {activeSessions.length === 0 && (
                 <div className="flex items-center justify-center gap-2 text-text-hint text-[13px] py-12">
                   <Users className="w-4 h-4" />
                   No active sessions right now
