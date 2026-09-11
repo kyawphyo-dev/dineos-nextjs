@@ -27,7 +27,7 @@ export default function ReceiptConfirmation({ receipt, onClose }: Props) {
         </div>
         <p className="text-[14px] font-medium text-text-primary">Payment received</p>
         <p className="text-[12px] text-text-muted mt-0.5">
-          Table {receipt.tableId} · ฿{receipt.total.toLocaleString()} paid by{" "}
+          Table {receipt.tableId} · ฿{receipt.grandTotal.toLocaleString()} paid by{" "}
           {receipt.method === "qr" ? "QR Pay" : receipt.method === "card" ? "Card" : "Cash"}
         </p>
       </motion.div>

@@ -1,7 +1,11 @@
 "use client";
 
 import type { DiningSession, Discount } from "@/app/types/cashier";
-import { calculateBill } from "@/context/CashierSessionContext";
+import {
+  calculateBill,
+  SERVICE_CHARGE_RATE,
+  TAX_RATE,
+} from "@/context/CashierSessionContext";
 
 interface Props {
   session: DiningSession;
@@ -9,11 +13,16 @@ interface Props {
 }
 
 export default function BillSummary({ session, discount }: Props) {
-  const { subtotal, discountAmount, total } = calculateBill(session, discount);
+  const { subtotal, discountAmount, serviceCharge, tax, grandTotal } =
+    calculateBill(session, discount);
   const orderLabel =
     session.orderIds.length > 1
       ? `Orders #${session.orderIds.join(", #")}`
       : `Order #${session.orderIds[0]}`;
+
+  const billSubtotal = session.billSubtotal ?? subtotal;
+  const billDiscount = session.billDiscount ?? discountAmount;
+  const billGrandTotal = session.billGrandTotal ?? grandTotal;
 
   return (
     <div className="bg-white rounded-2xl border border-black/8 p-5">
@@ -38,20 +47,30 @@ export default function BillSummary({ session, discount }: Props) {
       <div className="border-t border-black/8 pt-3 flex flex-col gap-1.5">
         <div className="flex justify-between text-[13px] text-text-muted">
           <span>Subtotal</span>
-          <span>฿{subtotal.toLocaleString()}</span>
+          <span>฿{billSubtotal.toLocaleString()}</span>
         </div>
-        {discount && discountAmount > 0 && (
+        {billDiscount > 0 && (
           <div className="flex justify-between text-[13px] text-rose">
             <span>
               Discount{" "}
-              {discount.type === "percent" ? `(${discount.value}%)` : "(fixed)"}
+              {discount?.type === "percent"
+                ? `(${discount.value}%)`
+                : "(fixed)"}
             </span>
-            <span>−฿{discountAmount.toLocaleString()}</span>
+            <span>−฿{billDiscount.toLocaleString()}</span>
           </div>
         )}
+        <div className="flex justify-between text-[13px] text-text-muted">
+          <span>Service charge ({SERVICE_CHARGE_RATE}%)</span>
+          <span>฿{serviceCharge.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between text-[13px] text-text-muted">
+          <span>VAT ({TAX_RATE}%)</span>
+          <span>฿{tax.toLocaleString()}</span>
+        </div>
         <div className="flex justify-between text-[17px] font-semibold text-text-primary pt-2 mt-1 border-t border-black/8">
-          <span>Total</span>
-          <span>฿{total.toLocaleString()}</span>
+          <span>Grand total</span>
+          <span>฿{billGrandTotal.toLocaleString()}</span>
         </div>
       </div>
     </div>

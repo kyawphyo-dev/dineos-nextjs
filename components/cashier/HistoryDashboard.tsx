@@ -24,16 +24,19 @@ export default function HistoryDashboard() {
     return toLocalISODate(d);
   }, []);
 
-  const [dateFilter, setDateFilter] = useState(todayISO);
+  const [dateFilter, setDateFilter] = useState<string | "all">("all");
 
   const filtered = useMemo(
-    () => receipts.filter((r) => r.paidDateISO === dateFilter),
+    () =>
+      dateFilter === "all"
+        ? [...receipts].reverse()
+        : receipts.filter((r) => r.paidDateISO === dateFilter).reverse(),
     [receipts, dateFilter],
   );
-  const sorted = [...filtered].reverse();
-  const selected = sorted.find((r) => r.id === selectedId);
+  const selected = filtered.find((r) => r.id === selectedId);
 
-  const dayTotal = filtered.reduce((sum, r) => sum + r.total, 0);
+  const allTotal = receipts.reduce((sum, r) => sum + r.grandTotal, 0);
+  const dayTotal = filtered.reduce((sum, r) => sum + r.grandTotal, 0);
 
   return (
     <div className="min-h-screen bg-cream-dark">
@@ -50,12 +53,15 @@ export default function HistoryDashboard() {
               Bill History
             </h1>
             <p className="text-[12px] text-text-muted mt-0.5">
-              {restaurant.name} {branch.name ? ` · ${branch.name}` : ""} ·{" "}
+              {restaurant.name}
+              {branch.name ? ` · ${branch.name}` : ""} · All-time ฿
+              {allTotal.toLocaleString()}
             </p>
             <p className="text-[12px] text-text-muted mt-0.5">
               {filtered.length} receipt
-              {filtered.length !== 1 ? "s" : ""} · ฿{dayTotal.toLocaleString()}{" "}
-              total
+              {filtered.length !== 1 ? "s" : ""}
+              {dateFilter === "all" ? " across all dates" : ` on ${dateFilter}`}
+              {" · "}฿{dayTotal.toLocaleString()}
             </p>
           </div>
         </div>
@@ -74,16 +80,19 @@ export default function HistoryDashboard() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
           <div className="flex flex-col gap-2">
-            {sorted.map((receipt) => (
+            {filtered.map((receipt) => (
               <HistoryRow
                 key={receipt.id}
                 receipt={receipt}
                 onClick={() => setSelectedId(receipt.id)}
               />
             ))}
-            {sorted.length === 0 && (
+            {filtered.length === 0 && (
               <div className="text-center text-text-hint text-[13px] py-12">
-                No bills were processed on this date.
+                No bills found
+                {dateFilter === "all"
+                  ? " for this branch yet."
+                  : ` on ${dateFilter}. Try "All" or another date.`}
               </div>
             )}
           </div>
