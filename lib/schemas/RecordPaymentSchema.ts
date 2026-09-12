@@ -3,6 +3,7 @@ import z from "zod";
 const PaymentSplitInput = z.object({
   method: z.enum(["cash", "card", "qr"]),
   amount: z.number().min(1, "Each payment split must be at least 1"),
+  receivedAmount: z.number().optional(),
   referenceNo: z.string().optional(),
 });
 

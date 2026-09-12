@@ -41,17 +41,23 @@ export type SplitMode = "even" | "byItem";
 export type PaymentSplit = {
   method: PaymentMethod;
   amount: number;
+  receivedAmount?: number;
   referenceNo?: string;
 };
 
 export type ReceiptPayment = {
   method: PaymentMethod;
   amount: number;
+  receivedAmount: number;
+  changeAmount: number;
   referenceNo?: string;
 };
 
 export type ReceiptRecord = {
   id: string;
+  restaurantName: string;
+  branchName: string;
+  branchLocation?: string | null;
   tableId: string;
   packageName: string;
   guestCount: number;
