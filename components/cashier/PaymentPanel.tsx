@@ -35,6 +35,7 @@ type InternalPaymentSplit = {
   id: string;
   method: PaymentMethod;
   amount: number;
+  receivedAmount?: number;
   referenceNo?: string;
 };
 
@@ -72,7 +73,11 @@ const initialModalState: DemoModalState = {
   qrCountdown: 3,
 };
 
-function generateRefNo(method: PaymentMethod, seed: number, suffix?: string): string | undefined {
+function generateRefNo(
+  method: PaymentMethod,
+  seed: number,
+  suffix?: string,
+): string | undefined {
   if (method === "cash") return undefined;
   return `DEMO-${seed}-${suffix ?? Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 }
@@ -97,7 +102,10 @@ export default function PaymentPanel({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modal, setModal] = useState<DemoModalState>(initialModalState);
 
-  const breakdown = useMemo(() => calculateBill(session, discount), [session, discount]);
+  const breakdown = useMemo(
+    () => calculateBill(session, discount),
+    [session, discount],
+  );
 
   const grandTotal = session.billGrandTotal ?? breakdown.grandTotal ?? total;
   const subtotal = session.billSubtotal ?? breakdown.subtotal;
@@ -113,7 +121,8 @@ export default function PaymentPanel({
   const paymentDifference = grandTotal - paymentSplitsTotal;
 
   const changeDue = Math.max(0, tenderedAmount - grandTotal);
-  const tenderedInsufficient = tenderedAmount > 0 && tenderedAmount < grandTotal;
+  const tenderedInsufficient =
+    tenderedAmount > 0 && tenderedAmount < grandTotal;
   const tenderedIsValid = tenderedAmount >= grandTotal;
 
   useEffect(() => {
@@ -154,18 +163,25 @@ export default function PaymentPanel({
     if (mode === "single") {
       const seed = Date.now();
       const ref = generateRefNo(selected, seed);
-      return [{
-        id: crypto.randomUUID(),
-        method: selected,
-        amount: grandTotal,
-        referenceNo: ref,
-      }];
+      const received =
+        selected === "cash" && tenderedAmount > 0 ? tenderedAmount : grandTotal;
+      return [
+        {
+          id: crypto.randomUUID(),
+          method: selected,
+          amount: grandTotal,
+          receivedAmount: received,
+          referenceNo: ref,
+        },
+      ];
     }
     return paymentSplits
       .filter((s) => s.amount > 0)
       .map((s, idx) => ({
         ...s,
-        referenceNo: s.referenceNo ?? generateRefNo(s.method, Date.now(), String(idx + 1)),
+        receivedAmount: s.receivedAmount ?? s.amount,
+        referenceNo:
+          s.referenceNo ?? generateRefNo(s.method, Date.now(), String(idx + 1)),
       }));
   };
 
@@ -184,10 +200,15 @@ export default function PaymentPanel({
         const payments: PaymentSplit[] = finalSplits.map((s) => ({
           method: s.method,
           amount: s.amount,
+          receivedAmount: s.receivedAmount,
           referenceNo: s.referenceNo,
         }));
 
-        const receipt = await recordPayment(session.tableId, discount, payments);
+        const receipt = await recordPayment(
+          session.tableId,
+          discount,
+          payments,
+        );
         onPaymentComplete(receipt);
       } catch (e) {
         setErrorMsg(
@@ -197,9 +218,7 @@ export default function PaymentPanel({
     });
   };
 
-  const advanceThroughDemoFlowIfNeeded = (
-    splits: InternalPaymentSplit[],
-  ) => {
+  const advanceThroughDemoFlowIfNeeded = (splits: InternalPaymentSplit[]) => {
     const nextIdx = findNextDemoIndex(splits);
     if (nextIdx === -1) {
       submitPayment(splits);
@@ -389,9 +408,7 @@ export default function PaymentPanel({
                       setTenderedAmount(Number(e.target.value) || 0)
                     }
                     onFocus={() =>
-                      setTenderedAmount((v) =>
-                        v === 0 ? grandTotal : v,
-                      )
+                      setTenderedAmount((v) => (v === 0 ? grandTotal : v))
                     }
                     placeholder="Enter amount received"
                     className="w-full text-[14px] font-medium text-text-primary outline-none bg-transparent placeholder:text-text-hint"
@@ -452,17 +469,17 @@ export default function PaymentPanel({
                         changeDue > 0
                           ? "text-success"
                           : tenderedAmount === 0
-                          ? "text-text-hint"
-                          : "text-text-primary"
+                            ? "text-text-hint"
+                            : "text-text-primary"
                       }`}
                     >
                       {tenderedAmount === 0
                         ? "—"
                         : changeDue > 0
-                        ? `+฿${changeDue.toLocaleString()}`
-                        : tenderedInsufficient
-                        ? `Short ฿${Math.abs(changeDue - grandTotal + tenderedAmount).toLocaleString()}`
-                        : "฿0"}
+                          ? `+฿${changeDue.toLocaleString()}`
+                          : tenderedInsufficient
+                            ? `Short ฿${Math.abs(changeDue - grandTotal + tenderedAmount).toLocaleString()}`
+                            : "฿0"}
                     </span>
                   </div>
                 </div>
@@ -492,9 +509,8 @@ export default function PaymentPanel({
         ) : (
           <div>
             <p className="text-[11px] text-text-hint mb-3">
-              Split bill grand total ฿
-              {grandTotal.toLocaleString()} across multiple
-              payment methods
+              Split bill grand total ฿{grandTotal.toLocaleString()} across
+              multiple payment methods
             </p>
 
             <div className="flex flex-col gap-2 mb-3">
@@ -515,11 +531,7 @@ export default function PaymentPanel({
                         <button
                           key={m.id}
                           onClick={() =>
-                            handlePaymentSplitChange(
-                              split.id,
-                              "method",
-                              m.id,
-                            )
+                            handlePaymentSplitChange(split.id, "method", m.id)
                           }
                           className={`w-7 h-7 rounded-md flex items-center justify-center border transition-colors ${
                             active
@@ -535,9 +547,7 @@ export default function PaymentPanel({
                   </div>
 
                   <div className="flex items-center flex-1 bg-white rounded-md border border-black/10 pl-2.5 pr-1 py-1">
-                    <span className="text-[13px] text-text-hint mr-1">
-                      ฿
-                    </span>
+                    <span className="text-[13px] text-text-hint mr-1">฿</span>
                     <input
                       type="number"
                       min={0}
@@ -596,16 +606,16 @@ export default function PaymentPanel({
                   {paymentDifference > 0
                     ? "Remaining"
                     : paymentDifference < 0
-                    ? "Overpaid"
-                    : "Status"}
+                      ? "Overpaid"
+                      : "Status"}
                 </span>
                 <span
                   className={`font-semibold ${
                     isPaymentBalanced
                       ? "text-success"
                       : paymentDifference < 0
-                      ? "text-red-500"
-                      : "text-clay"
+                        ? "text-red-500"
+                        : "text-clay"
                   }`}
                 >
                   {isPaymentBalanced
@@ -619,9 +629,7 @@ export default function PaymentPanel({
               whileTap={{ scale: 0.98 }}
               onClick={handleConfirmSplit}
               disabled={
-                !isPaymentBalanced ||
-                paymentSplitsTotal === 0 ||
-                isSubmitting
+                !isPaymentBalanced || paymentSplitsTotal === 0 || isSubmitting
               }
               className="w-full bg-bark text-white rounded-xl py-3 text-[14px] font-medium active:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
@@ -631,10 +639,7 @@ export default function PaymentPanel({
                   Recording payment…
                 </>
               ) : (
-                <>
-                  Confirm split payment · ฿
-                  {grandTotal.toLocaleString()}
-                </>
+                <>Confirm split payment · ฿{grandTotal.toLocaleString()}</>
               )}
             </motion.button>
           </div>
@@ -723,13 +728,7 @@ export default function PaymentPanel({
                         stroke="#1b1b1b"
                         strokeWidth="4"
                       />
-                      <rect
-                        x="6"
-                        y="6"
-                        width="20"
-                        height="20"
-                        fill="#1b1b1b"
-                      />
+                      <rect x="6" y="6" width="20" height="20" fill="#1b1b1b" />
                       <rect
                         x="70"
                         y="2"

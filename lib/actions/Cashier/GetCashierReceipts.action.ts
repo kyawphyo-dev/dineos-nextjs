@@ -58,6 +58,20 @@ export default async function getCashierReceipts(): Promise<{
       throw new Error("Branch ID not found");
     }
 
+    const branchInfo = await prisma.branch.findUnique({
+      where: { id: user.branchId },
+      select: {
+        id: true,
+        name: true,
+        location: true,
+        restaurant: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!branchInfo) {
+      throw new Error("Branch not found");
+    }
+
     const branchBills = await prisma.bill.findMany({
       where: {
         diningSession: {
@@ -91,7 +105,6 @@ export default async function getCashierReceipts(): Promise<{
               select: {
                 id: true,
                 items: {
-                  where: { status: { not: "cancelled" } },
                   select: {
                     id: true,
                     quantity: true,
@@ -108,14 +121,15 @@ export default async function getCashierReceipts(): Promise<{
           where: { status: { in: ["paid", "refunded"] } },
           orderBy: { paidAt: "asc" },
           select: {
+            grandTotal: true,
             amount: true,
+            receivedAmount: true,
+            changeAmount: true,
             referenceNo: true,
             paidAt: true,
             paymentMethod: { select: { name: true } },
+            cashier: { select: { name: true } },
           },
-        },
-        cashier: {
-          select: { name: true },
         },
       },
     });
@@ -183,6 +197,10 @@ export default async function getCashierReceipts(): Promise<{
         const payments: ReceiptPayment[] = bill.payments.map((p) => ({
           method: mapPaymentMethodNameToUI(p.paymentMethod.name),
           amount: Number(p.amount),
+          receivedAmount: p.receivedAmount
+            ? Number(p.receivedAmount)
+            : Number(p.amount),
+          changeAmount: p.changeAmount ? Number(p.changeAmount) : 0,
           referenceNo: p.referenceNo ?? undefined,
         }));
 
@@ -190,6 +208,9 @@ export default async function getCashierReceipts(): Promise<{
 
         return {
           id: bill.receiptNumber,
+          restaurantName: branchInfo.restaurant.name,
+          branchName: branchInfo.name,
+          branchLocation: branchInfo.location,
           tableId: ds.table!.tableNumber,
           packageName: ds.package?.name ?? "Walk-in",
           guestCount: ds.guestCount,
@@ -216,7 +237,7 @@ export default async function getCashierReceipts(): Promise<{
             year: "numeric",
           }),
           paidDateISO: toLocalISODate(paidAtDate),
-          cashierName: bill.cashier?.name ?? undefined,
+          cashierName: firstPayment?.cashier?.name ?? undefined,
         };
       });
 

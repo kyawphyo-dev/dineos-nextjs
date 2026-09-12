@@ -26,7 +26,9 @@ interface Props {
 export default function Receipt({ receipt }: Props) {
   const displayItems = receipt.items.reduce(
     (acc: typeof receipt.items, item) => {
-      const existing = acc.find((x) => x.name === item.name && x.price === item.price);
+      const existing = acc.find(
+        (x) => x.name === item.name && x.price === item.price,
+      );
       if (existing) {
         existing.qty += item.qty;
       } else {
@@ -44,13 +46,11 @@ export default function Receipt({ receipt }: Props) {
     >
       <div className="text-center mb-4">
         <p className="text-[15px] font-semibold tracking-wide text-text-primary">
-          BAAN RIM NAAM
+          {receipt.restaurantName}
         </p>
         <p className="text-[10px] text-text-muted mt-0.5">
-          Thai Kitchen · Sukhumvit, Bangkok
-        </p>
-        <p className="text-[10px] text-text-hint mt-0.5">
-          Tax ID: 0-1055-XXXXX-XX-X
+          {receipt.branchName}
+          {receipt.branchLocation ? ` · ${receipt.branchLocation}` : ""}
         </p>
       </div>
 
@@ -128,12 +128,17 @@ export default function Receipt({ receipt }: Props) {
       <div className="mb-1">
         <p className="text-[11px] text-text-muted mb-1.5">Payment details</p>
         <div className="flex flex-col gap-1.5">
-          {(receipt.payments?.length ? receipt.payments : [
-            {
-              method: receipt.method,
-              amount: receipt.grandTotal,
-            },
-          ]).map((p, idx) => (
+          {(receipt.payments?.length
+            ? receipt.payments
+            : [
+                {
+                  method: receipt.method,
+                  amount: receipt.grandTotal,
+                  receivedAmount: receipt.grandTotal,
+                  changeAmount: 0,
+                },
+              ]
+          ).map((p, idx) => (
             <div
               key={idx}
               className="border border-black/8 rounded-lg px-2.5 py-2 text-[11px]"
@@ -147,6 +152,20 @@ export default function Receipt({ receipt }: Props) {
                   ฿{p.amount.toLocaleString()}
                 </span>
               </div>
+              {p.receivedAmount > 0 && p.receivedAmount !== p.amount && (
+                <>
+                  <div className="flex justify-between mt-1 text-[10px] text-text-hint">
+                    <span>Received</span>
+                    <span>฿{p.receivedAmount.toLocaleString()}</span>
+                  </div>
+                  {p.changeAmount > 0 && (
+                    <div className="flex justify-between text-[10px] text-success">
+                      <span>Change</span>
+                      <span>−฿{p.changeAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                </>
+              )}
               {p.referenceNo && (
                 <div className="flex justify-between mt-1 text-[10px] text-text-hint font-mono">
                   <span>Ref</span>
@@ -162,14 +181,36 @@ export default function Receipt({ receipt }: Props) {
 
       <div className="flex flex-col gap-1 text-[11px] text-text-muted mb-4">
         <div className="flex justify-between">
-          <span>Total paid</span>
+          <span>Total received</span>
           <span className="font-semibold text-success">
+            ฿
+            {(receipt.payments?.length
+              ? receipt.payments.reduce(
+                  (sum, p) => sum + (p.receivedAmount ?? p.amount),
+                  0,
+                )
+              : receipt.grandTotal
+            ).toLocaleString()}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span>Total paid</span>
+          <span className="font-medium text-text-primary">
             ฿{receipt.grandTotal.toLocaleString()}
           </span>
         </div>
         <div className="flex justify-between">
           <span>Change due</span>
-          <span className="font-medium text-text-primary">฿0</span>
+          <span className="font-medium text-text-primary">
+            ฿
+            {(receipt.payments?.length
+              ? receipt.payments.reduce(
+                  (sum, p) => sum + (p.changeAmount ?? 0),
+                  0,
+                )
+              : 0
+            ).toLocaleString()}
+          </span>
         </div>
       </div>
 
@@ -203,8 +244,8 @@ function Row({
     emphasize === "discount"
       ? "text-rose"
       : emphasize === "primary"
-      ? "text-text-primary font-semibold"
-      : "text-text-primary";
+        ? "text-text-primary font-semibold"
+        : "text-text-primary";
   return (
     <div className="flex justify-between">
       <span>{label}</span>

@@ -23,7 +23,7 @@ export default function CashierDashboard() {
   const router = useRouter();
   const { sessions, restaurant, branch, getSession, createBill, closeSession } =
     useCashierSessions();
-  const activeSessions = sessions.filter((s) => s.status !== "billed");
+  const activeSessions = sessions;
   const activeSessionCount = activeSessions.length;
   const [isCreatingBill, startCreateBillTransition] = useTransition();
   const [createBillError, setCreateBillError] = useState<string | null>(null);
@@ -44,7 +44,9 @@ export default function CashierDashboard() {
     setMethod("cash");
     setCreateBillError(null);
     const session = sessions.find((s) => s.tableId === tableId);
-    setBillCreated(session ? !!session.billId : false);
+    setBillCreated(
+      session ? !!(session.billId || session.status === "paying") : false,
+    );
   };
 
   const handleCloseSession = () => {
@@ -57,6 +59,10 @@ export default function CashierDashboard() {
 
   const canCreateBill =
     !!selectedSession && selectedSession.status === "finished";
+
+  const hasServerBill = !!selectedSession?.billId;
+  const isPayingStatus = selectedSession?.status === "paying";
+  const showPaymentFlow = billCreated || hasServerBill || isPayingStatus;
 
   const handleCreateBill = async () => {
     if (!selectedSession) return;
@@ -80,9 +86,6 @@ export default function CashierDashboard() {
       }
     });
   };
-
-  const hasServerBill = !!selectedSession?.billId;
-  const showPaymentFlow = billCreated || hasServerBill;
 
   const billBreakdown = selectedSession
     ? calculateBill(selectedSession, discount)

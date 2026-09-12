@@ -26,13 +26,17 @@ export default function HistoryDashboard() {
 
   const [dateFilter, setDateFilter] = useState<string | "all">("all");
 
-  const filtered = useMemo(
-    () =>
+  const filtered = useMemo(() => {
+    const base =
       dateFilter === "all"
-        ? [...receipts].reverse()
-        : receipts.filter((r) => r.paidDateISO === dateFilter).reverse(),
-    [receipts, dateFilter],
-  );
+        ? receipts
+        : receipts.filter((r) => r.paidDateISO === dateFilter);
+    return [...base].sort((a, b) => {
+      const aKey = `${a.paidDateISO} ${a.paidAt}`;
+      const bKey = `${b.paidDateISO} ${b.paidAt}`;
+      return bKey.localeCompare(aKey);
+    });
+  }, [receipts, dateFilter]);
   const selected = filtered.find((r) => r.id === selectedId);
 
   const allTotal = receipts.reduce((sum, r) => sum + r.grandTotal, 0);

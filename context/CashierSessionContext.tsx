@@ -55,6 +55,12 @@ export default function CashierSessionProvider({
     value.sessions,
   );
   const [receipts, setReceipts] = useState<ReceiptRecord[]>(initialReceipts);
+  const [receiptIdsSnapshot, setReceiptIdsSnapshot] = useState<string>(
+    initialReceipts
+      .map((r) => r.id)
+      .sort()
+      .join("|"),
+  );
 
   if (value.sessions !== sessionsPropSnapshot) {
     setSessions((prevLocal) => {
@@ -67,6 +73,15 @@ export default function CashierSessionProvider({
       return [...value.sessions, ...localBilledStale];
     });
     setSessionsPropSnapshot(value.sessions);
+  }
+
+  const nextReceiptIds = initialReceipts
+    .map((r) => r.id)
+    .sort()
+    .join("|");
+  if (nextReceiptIds !== receiptIdsSnapshot) {
+    setReceipts(initialReceipts);
+    setReceiptIdsSnapshot(nextReceiptIds);
   }
 
   const getSession = (tableId: string) =>
@@ -163,6 +178,7 @@ export default function CashierSessionProvider({
         payments: payments.map((p) => ({
           method: p.method,
           amount: p.amount,
+          receivedAmount: p.receivedAmount,
           referenceNo: p.referenceNo,
         })),
       });

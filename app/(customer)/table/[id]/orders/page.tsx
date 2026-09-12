@@ -14,6 +14,7 @@ import {
 } from "@/components/customer/OrderCard";
 import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusCustomer.action";
 import CancelBillRequestCustomer from "@/lib/actions/customer/CancelBillRequestCustomer.action";
+import RequestBillCustomer from "@/lib/actions/customer/RequestBillCustomer.action";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -127,12 +128,14 @@ export default function OrdersPage() {
     if (!tableId || isRequestingBill || !hasOrders) return;
     setIsRequestingBill(true);
     try {
-      const res = await UpdateTableStatusCustomer({
+      const res = await RequestBillCustomer({
         tableId,
-        status: "request_bill",
       });
       if (res.success) {
-        toast.success("Bill requested! Staff will come to your table shortly.");
+        toast.success(
+          res.message ??
+            "Bill requested! Staff will come to your table shortly.",
+        );
         startTransition(() => {
           router.refresh();
         });

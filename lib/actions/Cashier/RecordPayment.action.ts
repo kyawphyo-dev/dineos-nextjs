@@ -19,6 +19,7 @@ import type {
 type PaymentSplitInput = {
   method: UIPaymentMethod;
   amount: number;
+  receivedAmount?: number;
   referenceNo?: string;
 };
 
@@ -106,6 +107,20 @@ async function RecordPayment(params: RecordPaymentParams) {
     const { id: cashierId, name: cashierName } =
       session.user as authenticatedUser;
 
+    const branchInfo = await prisma.branch.findUnique({
+      where: { id: branchId },
+      select: {
+        id: true,
+        name: true,
+        location: true,
+        restaurant: { select: { id: true, name: true } },
+      },
+    });
+
+    if (!branchInfo) {
+      throw new Error("Branch not found");
+    }
+
     const table = await prisma.table.findUnique({
       where: {
         branchId_tableNumber: {
@@ -169,6 +184,19 @@ async function RecordPayment(params: RecordPaymentParams) {
       );
     }
 
+    for (const split of payments) {
+      if (split.method === "cash") {
+        const received = split.receivedAmount ?? split.amount;
+        if (received < split.amount - 0.001) {
+          throw new Error(
+            `Cash received (฿${received.toLocaleString()}) must be at least the charged amount (฿${Number(
+              split.amount,
+            ).toLocaleString()})`,
+          );
+        }
+      }
+    }
+
     const methodIdsByUI: Record<UIPaymentMethod, string> = {
       cash: await resolvePaymentMethodId(branchId, "cash"),
       card: await resolvePaymentMethodId(branchId, "card"),
@@ -180,11 +208,18 @@ async function RecordPayment(params: RecordPaymentParams) {
 
       const paymentRows = await Promise.all(
         payments.map(async (split, idx) => {
+          const chargedAmount = Number(split.amount);
+          const receivedAmount = Number(split.receivedAmount ?? split.amount);
+          const changeAmount = Math.max(0, receivedAmount - chargedAmount);
+
           return tx.payment.create({
             data: {
               billId: activeSession!.bill!.id,
               paymentMethodId: methodIdsByUI[split.method],
-              amount: split.amount,
+              grandTotal: billTotal,
+              amount: chargedAmount,
+              receivedAmount,
+              changeAmount,
               paidAt: now,
               status: "paid",
               referenceNo:
@@ -196,7 +231,10 @@ async function RecordPayment(params: RecordPaymentParams) {
             },
             select: {
               id: true,
+              grandTotal: true,
               amount: true,
+              receivedAmount: true,
+              changeAmount: true,
               referenceNo: true,
               paidAt: true,
               status: true,
@@ -304,6 +342,8 @@ async function RecordPayment(params: RecordPaymentParams) {
     const receiptPayments: ReceiptPayment[] = result.paymentRows.map((row) => ({
       method: mapPaymentMethodNameToUI(row.paymentMethod.name),
       amount: Number(row.amount),
+      receivedAmount: Number(row.receivedAmount),
+      changeAmount: Number(row.changeAmount),
       referenceNo: row.referenceNo ?? undefined,
     }));
 
@@ -312,6 +352,9 @@ async function RecordPayment(params: RecordPaymentParams) {
 
     const receipt: ReceiptRecord = {
       id: result.updatedBill.receiptNumber,
+      restaurantName: branchInfo.restaurant.name,
+      branchName: branchInfo.name,
+      branchLocation: branchInfo.location,
       tableId: tableNumber,
       packageName: activeSession.package?.name ?? "Walk-in",
       guestCount: activeSession.guestCount,
@@ -327,7 +370,7 @@ async function RecordPayment(params: RecordPaymentParams) {
       grandTotal,
       total: grandTotal,
       method: uiMethod,
-      payments,
+      payments: receiptPayments,
       paidAt: paidAtDate.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
