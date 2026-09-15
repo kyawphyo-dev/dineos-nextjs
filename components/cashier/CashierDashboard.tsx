@@ -21,8 +21,15 @@ import type {
 
 export default function CashierDashboard() {
   const router = useRouter();
-  const { sessions, restaurant, branch, getSession, createBill, closeSession } =
-    useCashierSessions();
+  const {
+    sessions,
+    receipts,
+    restaurant,
+    branch,
+    getSession,
+    createBill,
+    closeSession,
+  } = useCashierSessions();
   const activeSessions = sessions;
   const activeSessionCount = activeSessions.length;
   const [isCreatingBill, startCreateBillTransition] = useTransition();
@@ -49,9 +56,11 @@ export default function CashierDashboard() {
     );
   };
 
-  const handleCloseSession = () => {
+  const handleCloseSession = async () => {
     if (!selectedTableId) return;
-    closeSession(selectedTableId);
+    try {
+      await closeSession(selectedTableId);
+    } catch {}
     setSelectedTableId(null);
     setPaidReceipt(null);
     setBillCreated(false);
@@ -62,6 +71,13 @@ export default function CashierDashboard() {
 
   const hasServerBill = !!selectedSession?.billId;
   const isPayingStatus = selectedSession?.status === "paying";
+  const isBillPaid = selectedSession?.billStatus === "paid";
+  const matchedReceipt =
+    isBillPaid && selectedSession?.billReceiptNumber
+      ? (receipts.find((r) => r.id === selectedSession.billReceiptNumber) ??
+        null)
+      : null;
+  const effectivePaidReceipt = paidReceipt ?? matchedReceipt;
   const showPaymentFlow = billCreated || hasServerBill || isPayingStatus;
 
   const handleCreateBill = async () => {
@@ -96,6 +112,7 @@ export default function CashierDashboard() {
   return (
     <div className="min-h-screen bg-cream-dark">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+        {/* Header */}
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-bark flex items-center justify-center shrink-0">
@@ -125,6 +142,7 @@ export default function CashierDashboard() {
           </div>
         </div>
 
+        {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6 mt-6">
           <div>
             <p className="text-[12px] font-medium text-text-hint uppercase tracking-wider mb-3">
@@ -150,9 +168,9 @@ export default function CashierDashboard() {
 
           {selectedSession && (
             <div className="flex flex-col gap-4">
-              {paidReceipt ? (
+              {effectivePaidReceipt ? (
                 <ReceiptConfirmation
-                  receipt={paidReceipt}
+                  receipt={effectivePaidReceipt}
                   onClose={handleCloseSession}
                 />
               ) : !showPaymentFlow ? (

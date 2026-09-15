@@ -19,6 +19,7 @@ import type { CashierSessionResult } from "@/lib/actions/Cashier/GetCashierSessi
 import MarkFinishedEating from "@/lib/actions/Cashier/MarkFinishedEating.action";
 import CreateBill from "@/lib/actions/Cashier/CreateBill.action";
 import RecordPayment from "@/lib/actions/Cashier/RecordPayment.action";
+import CloseCashierSession from "@/lib/actions/Cashier/CloseCashierSession.action";
 
 interface CashierSessionsContextValue extends CashierSessionResult {
   sessions: DiningSession[];
@@ -32,7 +33,7 @@ interface CashierSessionsContextValue extends CashierSessionResult {
     discount: Discount | null,
     payments: PaymentSplit[],
   ) => Promise<ReceiptRecord>;
-  closeSession: (tableId: string) => void;
+  closeSession: (tableId: string) => Promise<void>;
 }
 
 const CashierSessionsContext = createContext<
@@ -168,7 +169,7 @@ export default function CashierSessionProvider({
 
     const prevStatus = session.status;
     setSessions((prev) =>
-      prev.map((s) => (s.tableId === tableId ? { ...s, status: "billed" } : s)),
+      prev.map((s) => (s.tableId === tableId ? { ...s, status: "paying" } : s)),
     );
 
     try {
@@ -205,8 +206,34 @@ export default function CashierSessionProvider({
     }
   };
 
-  const closeSession = (tableId: string) => {
+  const closeSession = async (tableId: string): Promise<void> => {
+    const localSession = sessions.find((s) => s.tableId === tableId);
+    const prevStatus = localSession?.status;
+
     setSessions((prev) => prev.filter((s) => s.tableId !== tableId));
+
+    try {
+      const result = await CloseCashierSession({
+        tableNumber: tableId,
+        branchId: value.branch.id,
+      });
+
+      if (!result.success) {
+        throw new Error(result.message ?? "Failed to close session");
+      }
+
+      startTransition(() => {
+        router.refresh();
+      });
+    } catch (e) {
+      if (localSession && prevStatus) {
+        setSessions((prev) => {
+          if (prev.some((s) => s.tableId === tableId)) return prev;
+          return [...prev, { ...localSession, status: prevStatus }];
+        });
+      }
+      throw e;
+    }
   };
 
   return (

@@ -175,6 +175,10 @@ async function RecordPayment(params: RecordPaymentParams) {
       throw new Error("No bill found for this session. Create bill first.");
     }
 
+    if (activeSession.bill.status === "paid") {
+      throw new Error("This bill has already been paid.");
+    }
+
     const billTotal = Number(activeSession.bill.grandTotal);
     const totalPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
 
@@ -217,7 +221,6 @@ async function RecordPayment(params: RecordPaymentParams) {
               billId: activeSession!.bill!.id,
               paymentMethodId: methodIdsByUI[split.method],
               grandTotal: billTotal,
-              amount: chargedAmount,
               receivedAmount,
               changeAmount,
               paidAt: now,
@@ -232,7 +235,6 @@ async function RecordPayment(params: RecordPaymentParams) {
             select: {
               id: true,
               grandTotal: true,
-              amount: true,
               receivedAmount: true,
               changeAmount: true,
               referenceNo: true,
@@ -267,16 +269,9 @@ async function RecordPayment(params: RecordPaymentParams) {
       await tx.diningSession.update({
         where: { id: activeSession!.id },
         data: {
-          status: "completed",
-          closedAt: now,
-          closedById: cashierId,
+          status: "paying",
           finishedAt: activeSession!.finishedAt ?? now,
         },
-      });
-
-      await tx.table.update({
-        where: { id: table.id },
-        data: { status: "cleaning" },
       });
 
       return {
@@ -339,13 +334,17 @@ async function RecordPayment(params: RecordPaymentParams) {
       ? mapPaymentMethodNameToUI(firstPaymentMethodName)
       : "cash";
 
-    const receiptPayments: ReceiptPayment[] = result.paymentRows.map((row) => ({
-      method: mapPaymentMethodNameToUI(row.paymentMethod.name),
-      amount: Number(row.amount),
-      receivedAmount: Number(row.receivedAmount),
-      changeAmount: Number(row.changeAmount),
-      referenceNo: row.referenceNo ?? undefined,
-    }));
+    const receiptPayments: ReceiptPayment[] = result.paymentRows.map((row) => {
+      const received = Number(row.receivedAmount);
+      const change = Number(row.changeAmount);
+      return {
+        method: mapPaymentMethodNameToUI(row.paymentMethod.name),
+        amount: received - change,
+        receivedAmount: received,
+        changeAmount: change,
+        referenceNo: row.referenceNo ?? undefined,
+      };
+    });
 
     const paidAtDate =
       result.updatedBill.paidAt ?? new Date(result.updatedBill.id);

@@ -122,7 +122,6 @@ export default async function getCashierReceipts(): Promise<{
           orderBy: { paidAt: "asc" },
           select: {
             grandTotal: true,
-            amount: true,
             receivedAmount: true,
             changeAmount: true,
             referenceNo: true,
@@ -194,15 +193,19 @@ export default async function getCashierReceipts(): Promise<{
           }
         }
 
-        const payments: ReceiptPayment[] = bill.payments.map((p) => ({
-          method: mapPaymentMethodNameToUI(p.paymentMethod.name),
-          amount: Number(p.amount),
-          receivedAmount: p.receivedAmount
+        const payments: ReceiptPayment[] = bill.payments.map((p) => {
+          const received = p.receivedAmount
             ? Number(p.receivedAmount)
-            : Number(p.amount),
-          changeAmount: p.changeAmount ? Number(p.changeAmount) : 0,
-          referenceNo: p.referenceNo ?? undefined,
-        }));
+            : Number(p.grandTotal);
+          const change = p.changeAmount ? Number(p.changeAmount) : 0;
+          return {
+            method: mapPaymentMethodNameToUI(p.paymentMethod.name),
+            amount: received - change,
+            receivedAmount: received,
+            changeAmount: change,
+            referenceNo: p.referenceNo ?? undefined,
+          };
+        });
 
         const paidAtDate = bill.paidAt ?? new Date(bill.createdAt);
 
