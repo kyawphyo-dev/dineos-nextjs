@@ -63,14 +63,14 @@ type DemoModalState = {
   kind: DemoModalKind;
   pendingSplits: InternalPaymentSplit[];
   targetIndex: number;
-  qrCountdown: number;
+  countdown: number;
 };
 
 const initialModalState: DemoModalState = {
   kind: null,
   pendingSplits: [],
   targetIndex: 0,
-  qrCountdown: 3,
+  countdown: 0,
 };
 
 function generateRefNo(
@@ -126,16 +126,16 @@ export default function PaymentPanel({
   const tenderedIsValid = tenderedAmount >= grandTotal;
 
   useEffect(() => {
-    if (modal.kind === "qr" && modal.qrCountdown > 0) {
+    if ((modal.kind === "qr" || modal.kind === "card") && modal.countdown > 0) {
       const timer = setTimeout(() => {
         setModal((prev) => ({
           ...prev,
-          qrCountdown: Math.max(0, prev.qrCountdown - 1),
+          countdown: Math.max(0, prev.countdown - 1),
         }));
       }, 1000);
       return () => clearTimeout(timer);
     }
-  }, [modal.kind, modal.qrCountdown]);
+  }, [modal.kind, modal.countdown]);
 
   const handlePaymentSplitChange = (
     id: string,
@@ -229,7 +229,7 @@ export default function PaymentPanel({
       kind: next.method === "qr" ? "qr" : "card",
       pendingSplits: splits,
       targetIndex: nextIdx,
-      qrCountdown: next.method === "qr" ? 3 : 0,
+      countdown: next.method === "qr" ? 3 : 2,
     });
   };
 
@@ -251,7 +251,7 @@ export default function PaymentPanel({
       kind: nextSplit.method === "qr" ? "qr" : "card",
       pendingSplits,
       targetIndex: nextIdx,
-      qrCountdown: nextSplit.method === "qr" ? 3 : 0,
+      countdown: nextSplit.method === "qr" ? 3 : 2,
     });
   };
 
@@ -776,11 +776,11 @@ export default function PaymentPanel({
                   )}
                 </div>
 
-                {modal.qrCountdown > 0 ? (
+                {modal.countdown > 0 ? (
                   <div className="flex flex-col items-center gap-1.5 mb-4">
                     <Loader2 className="w-5 h-5 text-info animate-spin" />
                     <p className="text-[12px] text-text-hint">
-                      Waiting for scan… (auto-approves in {modal.qrCountdown}s)
+                      Waiting for scan… (auto-approves in {modal.countdown}s)
                     </p>
                   </div>
                 ) : (
@@ -799,7 +799,7 @@ export default function PaymentPanel({
                   </button>
                   <button
                     onClick={handleDemoApprove}
-                    disabled={modal.qrCountdown > 0 || isSubmitting}
+                    disabled={modal.countdown > 0 || isSubmitting}
                     className="flex-1 rounded-xl bg-bark text-white py-2.5 text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     Confirm received
@@ -899,24 +899,44 @@ export default function PaymentPanel({
                   <div className="flex justify-between text-[12px]">
                     <span className="text-text-muted">Status</span>
                     <span className="font-medium text-info">
-                      Ready to approve
+                      {modal.countdown > 0
+                        ? "Processing card terminal…"
+                        : "Ready to approve"}
                     </span>
                   </div>
                 </div>
 
+                {modal.countdown > 0 ? (
+                  <div className="flex flex-col items-center gap-1.5 mb-4 pt-2">
+                    <Loader2 className="w-6 h-6 text-info animate-spin" />
+                    <p className="text-[12px] text-text-hint">
+                      Reading chip + PIN… (auto-unlocks in {modal.countdown}s)
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-1.5 mb-4 pt-2 text-[12px] text-success">
+                    <Check className="w-4 h-4" />
+                    Chip verified — approval ready
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <button
                     onClick={handleDemoCancel}
-                    className="flex-1 rounded-xl border border-black/10 text-text-muted py-2.5 text-[13px] font-medium"
+                    className="flex-1 rounded-xl border border-slate-200 text-slate-600 py-3 text-[14px] font-semibold hover:bg-slate-50 active:scale-[0.98] transition"
                   >
                     Decline
                   </button>
                   <button
                     onClick={handleDemoApprove}
-                    disabled={isSubmitting}
-                    className="flex-1 rounded-xl bg-success text-white py-2.5 text-[13px] font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                    disabled={modal.countdown > 0 || isSubmitting}
+                    className="flex-1 rounded-xl bg-emerald-600 text-white py-3 text-[14px] font-bold shadow-md shadow-emerald-600/25 hover:bg-emerald-700 active:scale-[0.98] transition disabled:bg-slate-300 disabled:text-slate-500 disabled:shadow-none disabled:opacity-80 disabled:cursor-not-allowed"
                   >
-                    Approve payment
+                    {isSubmitting
+                      ? "Sending…"
+                      : modal.countdown > 0
+                        ? `Wait ${modal.countdown}s…`
+                        : "✓ Approve payment"}
                   </button>
                 </div>
               </div>

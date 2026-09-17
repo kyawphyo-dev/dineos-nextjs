@@ -126,6 +126,7 @@ export default function CashierSessionProvider({
       branchId: value.branch.id,
       subtotal,
       discount: discountAmount,
+      discountInfo: discount,
     });
 
     if (!result.success) {
@@ -182,6 +183,7 @@ export default function CashierSessionProvider({
           receivedAmount: p.receivedAmount,
           referenceNo: p.referenceNo,
         })),
+        discount,
       });
 
       if (!result.success || !result.data?.receipt) {

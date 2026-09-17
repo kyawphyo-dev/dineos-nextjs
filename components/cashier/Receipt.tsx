@@ -220,7 +220,7 @@ export default function Receipt({ receipt }: Props) {
         Thank you for dining with us
       </p>
       <p className="text-center text-[10px] text-text-hint">
-        Please come again 🙏
+        Please come again
       </p>
       <p className="text-center text-[9px] text-text-hint mt-2 opacity-60">
         Powered by DineOS
