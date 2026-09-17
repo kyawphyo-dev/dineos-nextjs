@@ -27,6 +27,7 @@ interface RecordPaymentParams {
   tableNumber: string;
   branchId: string;
   payments: PaymentSplitInput[];
+  discount: Discount | null | undefined;
 }
 
 const ACTIVE_DINING_STATUSES = [
@@ -97,7 +98,12 @@ async function RecordPayment(params: RecordPaymentParams) {
   if (!validate.success) {
     throw new Error(validate.error.issues[0].message);
   }
-  const { tableNumber, branchId, payments } = validate.data;
+  const {
+    tableNumber,
+    branchId,
+    payments,
+    discount: discountFromUI,
+  } = validate.data;
 
   try {
     const session = await getServerSession(authOptions);
@@ -303,29 +309,51 @@ async function RecordPayment(params: RecordPaymentParams) {
     const tax = Number(result.updatedBill.tax);
     const grandTotal = Number(result.updatedBill.grandTotal);
 
+    const updatedBillAny = result.updatedBill as unknown as {
+      discountType?: "percent" | "fixed" | null;
+      discountValue?: number | null;
+    };
+    const storedDiscountType =
+      updatedBillAny.discountType === "percent" ||
+      updatedBillAny.discountType === "fixed"
+        ? updatedBillAny.discountType
+        : null;
+    const storedDiscountValue =
+      updatedBillAny.discountValue != null
+        ? Number(updatedBillAny.discountValue)
+        : null;
+
     let discount: Discount | null = null;
     let discountAmount = 0;
 
     if (discountRaw > 0) {
-      const grossBeforeDiscount = grandTotal + discountRaw;
-      const menuSubtotalPlusTaxes = subtotal + serviceCharge + tax;
-
-      const looksLikePercent =
-        subtotal > 0 &&
-        Math.abs(Math.round(subtotal * (discountRaw / 100)) - discountRaw) <=
-          Math.max(2, subtotal * 0.01) &&
-        Math.abs(
-          menuSubtotalPlusTaxes -
-            Math.round(subtotal * (discountRaw / 100)) -
-            grossBeforeDiscount,
-        ) <= Math.max(2, grossBeforeDiscount * 0.01);
-
-      if (looksLikePercent) {
-        discount = { type: "percent", value: Math.round(discountRaw) };
-        discountAmount = Math.round(subtotal * (discountRaw / 100));
-      } else {
-        discount = { type: "fixed", value: discountRaw };
+      if (discountFromUI) {
+        discount = discountFromUI;
         discountAmount = discountRaw;
+      } else if (storedDiscountType && storedDiscountValue != null) {
+        discount = { type: storedDiscountType, value: storedDiscountValue };
+        discountAmount = discountRaw;
+      } else {
+        const grossBeforeDiscount = grandTotal + discountRaw;
+        const menuSubtotalPlusTaxes = subtotal + serviceCharge + tax;
+
+        const looksLikePercent =
+          subtotal > 0 &&
+          Math.abs(Math.round(subtotal * (discountRaw / 100)) - discountRaw) <=
+            Math.max(2, subtotal * 0.01) &&
+          Math.abs(
+            menuSubtotalPlusTaxes -
+              Math.round(subtotal * (discountRaw / 100)) -
+              grossBeforeDiscount,
+          ) <= Math.max(2, grossBeforeDiscount * 0.01);
+
+        if (looksLikePercent) {
+          discount = { type: "percent", value: Math.round(discountRaw) };
+          discountAmount = Math.round(subtotal * (discountRaw / 100));
+        } else {
+          discount = { type: "fixed", value: discountRaw };
+          discountAmount = discountRaw;
+        }
       }
     }
 

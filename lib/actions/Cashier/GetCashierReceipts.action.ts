@@ -166,30 +166,46 @@ export default async function getCashierReceipts(): Promise<{
         const tax = Number(bill.tax ?? 0);
         const grandTotal = Number(bill.grandTotal);
 
+        const billAny = bill as unknown as {
+          discountType?: "percent" | "fixed" | null;
+          discountValue?: number | null;
+        };
+        const storedDiscountType =
+          billAny.discountType === "percent" || billAny.discountType === "fixed"
+            ? billAny.discountType
+            : null;
+        const storedDiscountValue =
+          billAny.discountValue != null ? Number(billAny.discountValue) : null;
+
         let discount: Discount | null = null;
         let discountAmount = 0;
 
         if (discountRaw > 0) {
-          const grossBeforeDiscount = grandTotal + discountRaw;
-          const menuSubtotalPlusTaxes = subtotal + serviceCharge + tax;
-
-          const looksLikePercent =
-            subtotal > 0 &&
-            Math.abs(
-              Math.round(subtotal * (discountRaw / 100)) - discountRaw,
-            ) <= Math.max(2, subtotal * 0.01) &&
-            Math.abs(
-              menuSubtotalPlusTaxes -
-                Math.round(subtotal * (discountRaw / 100)) -
-                grossBeforeDiscount,
-            ) <= Math.max(2, grossBeforeDiscount * 0.01);
-
-          if (looksLikePercent) {
-            discount = { type: "percent", value: Math.round(discountRaw) };
-            discountAmount = Math.round(subtotal * (discountRaw / 100));
-          } else {
-            discount = { type: "fixed", value: discountRaw };
+          if (storedDiscountType && storedDiscountValue != null) {
+            discount = { type: storedDiscountType, value: storedDiscountValue };
             discountAmount = discountRaw;
+          } else {
+            const grossBeforeDiscount = grandTotal + discountRaw;
+            const menuSubtotalPlusTaxes = subtotal + serviceCharge + tax;
+
+            const looksLikePercent =
+              subtotal > 0 &&
+              Math.abs(
+                Math.round(subtotal * (discountRaw / 100)) - discountRaw,
+              ) <= Math.max(2, subtotal * 0.01) &&
+              Math.abs(
+                menuSubtotalPlusTaxes -
+                  Math.round(subtotal * (discountRaw / 100)) -
+                  grossBeforeDiscount,
+              ) <= Math.max(2, grossBeforeDiscount * 0.01);
+
+            if (looksLikePercent) {
+              discount = { type: "percent", value: Math.round(discountRaw) };
+              discountAmount = Math.round(subtotal * (discountRaw / 100));
+            } else {
+              discount = { type: "fixed", value: discountRaw };
+              discountAmount = discountRaw;
+            }
           }
         }
 

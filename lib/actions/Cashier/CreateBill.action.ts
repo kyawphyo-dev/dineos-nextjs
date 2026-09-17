@@ -8,12 +8,14 @@ import { errorAction } from "@/lib/response";
 import { serializePrisma } from "@/lib/serializer";
 import { revalidatePath } from "next/cache";
 import CreateBillSchema from "@/lib/schemas/CreateBillSchema";
+import type { Discount } from "@/app/types/cashier";
 
 interface CreateBillParams {
   tableNumber: string;
   branchId: string;
   subtotal: number;
   discount: number;
+  discountInfo: Discount | null;
 }
 
 const ACTIVE_DINING_STATUSES = [
@@ -30,6 +32,8 @@ export type CreatedBillResult = {
   sessionId: string;
   subtotal: number;
   discount: number;
+  discountType?: string | null;
+  discountValue?: number | null;
   serviceChargeRate: number;
   serviceCharge: number;
   taxRate: number;
@@ -68,7 +72,8 @@ async function CreateBill(params: CreateBillParams) {
   if (!validate.success) {
     throw new Error(validate.error.issues[0].message);
   }
-  const { tableNumber, branchId, subtotal, discount } = validate.data;
+  const { tableNumber, branchId, subtotal, discount, discountInfo } =
+    validate.data;
 
   try {
     const session = await getServerSession(authOptions);
