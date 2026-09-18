@@ -89,10 +89,10 @@ async function CloseCashierSession(params: CloseCashierSessionParams) {
         },
       });
 
-      // await tx.table.update({
-      //   where: { id: table.id },
-      //   data: { status: "cleaning" },
-      // });
+      await tx.table.update({
+        where: { id: table.id },
+        data: { status: "cleaning" },
+      });
     });
 
     revalidatePath("/(cashier)", "layout");

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useElapsed } from "@/app/hooks/useElapsed";
-import { getNextStatus } from "@/context/TicketsContext";
+import { getNextStatus } from "@/context/KitchenSessionContext";
 import type { Ticket } from "@/app/types/kitchen";
 
 const ACTION_LABEL: Record<string, string> = {
