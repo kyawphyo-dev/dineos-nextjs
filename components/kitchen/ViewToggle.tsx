@@ -9,11 +9,13 @@ interface Props {
 
 export default function ViewToggle({ mode, onChange }: Props) {
   return (
-    <div className="flex rounded-xl border border-black/10 overflow-hidden bg-white flex-shrink-0">
+    <div className="flex rounded-xl border border-bark/20 overflow-hidden bg-white shrink-0">
       <button
         onClick={() => onChange("order")}
         className={`px-3.5 py-1.5 text-[12px] font-medium ${
-          mode === "order" ? "bg-cream-dark text-text-primary" : "text-text-muted"
+          mode === "order"
+            ? "bg-bark text-white border-bark"
+            : "bg-cream-dark text-text-primary"
         }`}
       >
         By order
@@ -21,7 +23,9 @@ export default function ViewToggle({ mode, onChange }: Props) {
       <button
         onClick={() => onChange("dish")}
         className={`px-3.5 py-1.5 text-[12px] font-medium ${
-          mode === "dish" ? "bg-cream-dark text-text-primary" : "text-text-muted"
+          mode === "dish"
+            ? "bg-bark text-white border-bark"
+            : "bg-cream-dark text-text-primary"
         }`}
       >
         By dish

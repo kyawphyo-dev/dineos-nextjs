@@ -8,7 +8,7 @@ import StationTabs from "@/components/kitchen/StationTabs";
 import ViewToggle from "@/components/kitchen/ViewToggle";
 import KanbanColumn from "@/components/kitchen/KanbanColumn";
 import DishView from "@/components/kitchen/DishView";
-import { useTickets } from "@/context/TicketsContext";
+import { useTickets } from "@/context/KitchenSessionContext";
 import type { TicketStatus, ViewMode } from "@/app/types/kitchen";
 
 const COLUMNS: TicketStatus[] = ["new", "preparing", "ready"];
@@ -41,7 +41,7 @@ function KitchenDisplay() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-bark flex items-center justify-center flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-bark flex items-center justify-center shrink-0">
               <ChefHat className="w-4.5 h-4.5 text-white" />
             </div>
             <div>
