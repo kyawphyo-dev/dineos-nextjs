@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChefHat, RefreshCw, ClipboardList } from "lucide-react";
+import {
+  ChefHat,
+  RefreshCw,
+  ClipboardList,
+  Building2,
+  MapPin,
+} from "lucide-react";
 import RouteGuard from "@/components/shared/RouteGuard";
 import UserMenu from "@/components/shared/UserMenu";
 import CategoryFilter from "@/components/kitchen/CategoryFilter";
@@ -14,7 +20,8 @@ import type { TicketStatus, ViewMode } from "@/app/types/kitchen";
 const COLUMNS: TicketStatus[] = ["new", "preparing", "ready"];
 
 function KitchenDisplay() {
-  const { tickets, advanceStatus, refreshData } = useKitchenSession();
+  const { tickets, advanceStatus, refreshData, restaurant, branch } =
+    useKitchenSession();
   const [category, setCategory] = useState("All categories");
   const [viewMode, setViewMode] = useState<ViewMode>("order");
 
@@ -40,18 +47,37 @@ function KitchenDisplay() {
   return (
     <div className="min-h-screen bg-cream-dark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Header / Navbar */}
         <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
-          <div className="flex items-start gap-3">
+          <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-bark flex items-center justify-center shrink-0">
               <ChefHat className="w-5 h-5 text-white" />
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1">
               <h1 className="text-[18px] font-semibold text-text-primary leading-tight">
                 Kitchen Display
               </h1>
-              <p className="text-[12px] text-text-muted mt-0.5">
-                {category} · {activeCount} active ticket
-                {activeCount !== 1 ? "s" : ""}
+              <p className="text-[12px] text-text-muted mt-0.5 flex items-center flex-wrap gap-x-2">
+                <span className="inline-flex items-center gap-1">
+                  <Building2 className="w-3 h-3" />
+                  {restaurant.name}
+                </span>
+                {branch.name && (
+                  <span className="inline-flex items-center gap-1">
+                    · <MapPin className="w-3 h-3" /> {branch.name}
+                    {branch.location && (
+                      <span className="text-text-hint">
+                        ({branch.location})
+                      </span>
+                    )}
+                  </span>
+                )}
+                {!branch.name && restaurant.name && (
+                  <span className="text-text-hint">— No branch assigned</span>
+                )}
+                <span>
+                  · {activeCount} active ticket{activeCount !== 1 ? "s" : ""}
+                </span>
               </p>
             </div>
           </div>
@@ -77,11 +103,13 @@ function KitchenDisplay() {
           </div>
         </div>
 
+        {/* Filters row */}
         <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
           <CategoryFilter active={category} onChange={setCategory} />
           <ViewToggle mode={viewMode} onChange={setViewMode} />
         </div>
 
+        {/* Ticket content */}
         {viewMode === "order" ? (
           <div className="flex gap-4 overflow-x-auto pb-2 sm:overflow-x-visible sm:flex-wrap lg:flex-nowrap">
             {COLUMNS.map((status) => (
