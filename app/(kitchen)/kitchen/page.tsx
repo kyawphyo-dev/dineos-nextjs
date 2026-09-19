@@ -1,14 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import {
-  ChefHat,
-  RefreshCw,
-  Building2,
-  MapPin,
-  UtensilsCrossed,
-  ClipboardList,
-} from "lucide-react";
+import { ChefHat, RefreshCw, ClipboardList } from "lucide-react";
 import RouteGuard from "@/components/shared/RouteGuard";
 import UserMenu from "@/components/shared/UserMenu";
 import CategoryFilter from "@/components/kitchen/CategoryFilter";
@@ -21,8 +14,8 @@ import type { TicketStatus, ViewMode } from "@/app/types/kitchen";
 const COLUMNS: TicketStatus[] = ["new", "preparing", "ready"];
 
 function KitchenDisplay() {
-  const { tickets, advanceStatus } = useTickets();
-  const [station, setStation] = useState("All stations");
+  const { tickets, advanceStatus, refreshData } = useKitchenSession();
+  const [category, setCategory] = useState("All categories");
   const [viewMode, setViewMode] = useState<ViewMode>("order");
 
   const filteredTickets = useMemo(() => {
@@ -57,7 +50,7 @@ function KitchenDisplay() {
                 Kitchen Display
               </h1>
               <p className="text-[12px] text-text-muted mt-0.5">
-                {station} · {activeCount} active ticket
+                {category} · {activeCount} active ticket
                 {activeCount !== 1 ? "s" : ""}
               </p>
             </div>

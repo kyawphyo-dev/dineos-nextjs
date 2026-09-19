@@ -43,7 +43,7 @@ export default function KitchenSessionProvider({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [tickets, setTickets] = useState<Ticket[]>(value.tickets);
   const [ticketsPropSnapshot, setTicketsPropSnapshot] = useState(value.tickets);
   const [menus, setMenus] = useState<KitchenMenu[]>(value.menus);
