@@ -194,6 +194,7 @@ export default async function getKitchenSession(): Promise<{
                     name: true,
                     category: {
                       select: {
+                        id: true,
                         name: true,
                       },
                     },
@@ -257,6 +258,8 @@ export default async function getKitchenSession(): Promise<{
         name: orderItem.menuItem.name,
         qty: orderItem.quantity,
         station: mapCategoryToStation(orderItem.menuItem.category.name),
+        categoryId: orderItem.menuItem.category.id,
+        categoryName: orderItem.menuItem.category.name,
         note: orderItem.note ?? undefined,
       }));
 

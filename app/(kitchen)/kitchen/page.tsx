@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import RouteGuard from "@/components/shared/RouteGuard";
 import UserMenu from "@/components/shared/UserMenu";
-import StationTabs from "@/components/kitchen/StationTabs";
+import CategoryFilter from "@/components/kitchen/CategoryFilter";
 import ViewToggle from "@/components/kitchen/ViewToggle";
 import KanbanColumn from "@/components/kitchen/KanbanColumn";
 import DishView from "@/components/kitchen/DishView";
@@ -21,20 +21,20 @@ import type { TicketStatus, ViewMode } from "@/app/types/kitchen";
 const COLUMNS: TicketStatus[] = ["new", "preparing", "ready"];
 
 function KitchenDisplay() {
-  const { restaurant, branch, tickets, advanceStatus, refreshData } =
-    useKitchenSession();
+  const { tickets, advanceStatus } = useTickets();
   const [station, setStation] = useState("All stations");
   const [viewMode, setViewMode] = useState<ViewMode>("order");
 
   const filteredTickets = useMemo(() => {
-    if (station === "All stations") return tickets;
     return tickets
       .map((t) => ({
         ...t,
-        items: t.items.filter((i) => i.station === station),
+        items: t.items.filter(
+          (i) => category === "All categories" || i.categoryName === category,
+        ),
       }))
       .filter((t) => t.items.length > 0);
-  }, [tickets, station]);
+  }, [tickets, category]);
 
   const activeCount = filteredTickets.filter(
     (t) => t.status !== "served",
@@ -56,28 +56,10 @@ function KitchenDisplay() {
               <h1 className="text-[18px] font-semibold text-text-primary leading-tight">
                 Kitchen Display
               </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                <div className="flex items-center gap-1.5">
-                  <Building2 className="w-3.5 h-3.5 text-text-hint shrink-0" />
-                  <span className="text-[12px] font-medium text-text-secondary">
-                    {restaurant.name || "—"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <UtensilsCrossed className="w-3.5 h-3.5 text-text-hint shrink-0" />
-                  <span className="text-[12px] font-medium text-text-muted">
-                    {branch.name || "—"}
-                  </span>
-                </div>
-                {branch.location && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-text-hint shrink-0" />
-                    <span className="text-[12px] text-text-muted">
-                      {branch.location}
-                    </span>
-                  </div>
-                )}
-              </div>
+              <p className="text-[12px] text-text-muted mt-0.5">
+                {station} · {activeCount} active ticket
+                {activeCount !== 1 ? "s" : ""}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2.5">
@@ -103,7 +85,7 @@ function KitchenDisplay() {
         </div>
 
         <div className="flex items-center justify-between flex-wrap gap-3 mb-5">
-          <StationTabs active={station} onChange={setStation} />
+          <CategoryFilter active={category} onChange={setCategory} />
           <ViewToggle mode={viewMode} onChange={setViewMode} />
         </div>
 

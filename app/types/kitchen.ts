@@ -11,6 +11,8 @@ export type TicketItem = {
   name: string;
   qty: number;
   station: Station;
+  categoryId: string;
+  categoryName: string;
   note?: string;
 };
 
