@@ -4,9 +4,9 @@ import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 import { errorAction } from "@/lib/response";
 import { serializePrisma } from "@/lib/serializer";
+import { mapOrderStatusToTicketStatus } from "@/lib/kitchen-mapping";
 import { getServerSession } from "next-auth";
 import type { Station, Ticket, TicketItem } from "@/app/types/kitchen";
-import type { Menu, Category } from "@/app/types/admin";
 
 const ACTIVE_ORDER_STATUSES = ["pending", "preparing", "served"] as const;
 
@@ -72,18 +72,7 @@ function mapCategoryToStation(categoryName: string): Station {
 }
 
 function mapOrderStatusToTicket(status: string): Ticket["status"] {
-  switch (status) {
-    case "pending":
-      return "new";
-    case "preparing":
-      return "preparing";
-    case "served":
-      return "ready";
-    case "completed":
-      return "served";
-    default:
-      return "new";
-  }
+  return mapOrderStatusToTicketStatus(status);
 }
 
 export type KitchenSessionResult = {

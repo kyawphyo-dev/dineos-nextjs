@@ -14,13 +14,15 @@ import type {
   KitchenMenu,
   KitchenCategory,
 } from "@/lib/actions/Kitchen/GetKitchenSession.action";
+import UpdateKitchenOrderStatus from "@/lib/actions/Kitchen/UpdateKitchenOrderStatus.action";
+import { mapTicketStatusToOrderStatus } from "@/lib/kitchen-mapping";
 
 interface KitchenSessionContextValue extends KitchenSessionResult {
   menus: KitchenMenu[];
   categories: KitchenCategory[];
   tickets: Ticket[];
   getTicket: (ticketId: string) => Ticket | undefined;
-  advanceStatus: (ticketId: string, nextStatus: TicketStatus) => void;
+  advanceStatus: (ticketId: string, nextStatus: TicketStatus) => Promise<void>;
   refreshData: () => void;
 }
 
@@ -43,7 +45,7 @@ export default function KitchenSessionProvider({
   children: ReactNode;
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
   const [tickets, setTickets] = useState<Ticket[]>(value.tickets);
   const [ticketsPropSnapshot, setTicketsPropSnapshot] = useState(value.tickets);
   const [menus, setMenus] = useState<KitchenMenu[]>(value.menus);
@@ -80,10 +82,13 @@ export default function KitchenSessionProvider({
   const getTicket = (ticketId: string) =>
     tickets.find((t) => t.id === ticketId);
 
-  const advanceStatus = (ticketId: string, nextStatus: TicketStatus) => {
+  const advanceStatus = async (ticketId: string, nextStatus: TicketStatus) => {
     setTickets((prev) =>
       prev.map((t) => (t.id === ticketId ? { ...t, status: nextStatus } : t)),
     );
+
+    const orderStatus = mapTicketStatusToOrderStatus(nextStatus);
+    await UpdateKitchenOrderStatus({ orderId: ticketId, status: orderStatus });
 
     startTransition(() => {
       router.refresh();
@@ -125,7 +130,7 @@ export function useKitchenSession() {
 
 export function useTickets(): {
   tickets: Ticket[];
-  advanceStatus: (ticketId: string, nextStatus: TicketStatus) => void;
+  advanceStatus: (ticketId: string, nextStatus: TicketStatus) => Promise<void>;
 } {
   const ctx = useKitchenSession();
   return {

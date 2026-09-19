@@ -1,44 +1,18 @@
 import { CustomerOrder, CustomerOrderStatus } from "@/app/types/customer";
 import { motion } from "framer-motion";
-import { Check, Flame, Utensils } from "lucide-react";
+import { Ban, Check, Flame, Utensils } from "lucide-react";
+import {
+  CUSTOMER_STATUS_BADGE_LABEL,
+  CUSTOMER_STATUS_BADGE_STYLE,
+  CUSTOMER_STATUS_STEP_INDEX,
+  CUSTOMER_STATUS_STEP_LABELS,
+  toCustomerOrderStatus,
+} from "@/lib/kitchen-mapping";
 
-const STATUS_STEPS: { key: CustomerOrderStatus; label: string }[] = [
-  { key: "received", label: "Order received" },
-  { key: "preparing", label: "Kitchen preparing" },
-  { key: "ready", label: "Ready to serve" },
-  { key: "served", label: "Served" },
-];
+export { toCustomerOrderStatus };
 
-const STATUS_INDEX: Record<CustomerOrderStatus, number> = {
-  pending: 0,
-  confirm: 0,
-  received: 0,
-  preparing: 1,
-  ready: 2,
-  served: 3,
-  completed: 3,
-  cancelled: 3,
-};
-
-export function toCustomerOrderStatus(dbStatus: string): CustomerOrderStatus {
-  switch (dbStatus) {
-    case "pending":
-    case "confirm":
-      return "received";
-    case "preparing":
-      return "preparing";
-    case "ready":
-      return "ready";
-    case "served":
-      return "served";
-    case "completed":
-      return "served";
-    case "cancelled":
-      return "cancelled";
-    default:
-      return "received" as CustomerOrderStatus;
-  }
-}
+const STATUS_STEPS = CUSTOMER_STATUS_STEP_LABELS;
+const STATUS_INDEX = CUSTOMER_STATUS_STEP_INDEX;
 
 function formatPlacedAt(value: string): string {
   if (!value) return "Just now";
@@ -52,31 +26,17 @@ function formatPlacedAt(value: string): string {
 }
 
 function StatusBadge({ status }: { status: CustomerOrderStatus }) {
-  const styles: Record<CustomerOrderStatus, string> = {
-    received: "bg-clay-light text-clay-dark",
-    preparing: "bg-gold-light text-[#9A6C10]",
-    ready: "bg-sage-light text-sage",
-    served: "bg-sage text-white",
-    completed: "bg-sage text-white",
-    pending: "bg-clay-light text-clay-dark",
-    confirm: "bg-clay-light text-clay-dark",
-    cancelled: "bg-red-100 text-red-700",
-  };
-  const labels: Record<CustomerOrderStatus, string> = {
-    received: "Received",
-    preparing: "Preparing",
-    ready: "Ready to serve",
-    served: "Served",
-    completed: "Served",
-    pending: "Received",
-    confirm: "Received",
-    cancelled: "Cancelled",
-  };
+  const style =
+    CUSTOMER_STATUS_BADGE_STYLE[status] ??
+    CUSTOMER_STATUS_BADGE_STYLE.received;
+  const label =
+    CUSTOMER_STATUS_BADGE_LABEL[status] ??
+    CUSTOMER_STATUS_BADGE_LABEL.received;
   return (
     <span
-      className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${styles[status]}`}
+      className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${style}`}
     >
-      {labels[status]}
+      {label}
     </span>
   );
 }
@@ -106,15 +66,18 @@ function StepDotIcon({
 }
 
 export function OrderCard({ order }: { order: CustomerOrder }) {
-  const statusKey = (
-    order.status in STATUS_INDEX ? order.status : "received"
-  ) as CustomerOrderStatus;
-  const currentStep = STATUS_INDEX[statusKey] ?? 0;
+  const mappedStatus: CustomerOrderStatus =
+    order.status in STATUS_INDEX || order.status === "cancelled"
+      ? order.status
+      : "received";
+  const isCancelled = mappedStatus === "cancelled";
+  const currentStep = isCancelled ? -1 : STATUS_INDEX[mappedStatus] ?? 0;
   const total = order.items.reduce((s, i) => s + i.price * i.qty, 0);
   const estimatedMin = order.estimatedMin ?? 15;
   const placedLabel = formatPlacedAt(order.placedAt);
 
   const dotClassFor = (i: number) => {
+    if (isCancelled) return "bg-red-100 text-red-500 border border-red-200";
     const isDone = i < currentStep;
     const isActive = i === currentStep;
     if (isDone) {
@@ -131,6 +94,7 @@ export function OrderCard({ order }: { order: CustomerOrder }) {
   };
 
   const lineClassFor = (i: number) => {
+    if (isCancelled) return "bg-red-100";
     if (i < currentStep) {
       if (i >= 2) return "bg-sage/50";
       return "bg-clay/40";
@@ -143,6 +107,7 @@ export function OrderCard({ order }: { order: CustomerOrder }) {
     isDone: boolean,
     isActive: boolean,
   ) => {
+    if (isCancelled) return "Order cancelled";
     if (isDone) return placedLabel;
     if (isActive) {
       if (stepKey === "ready") return "Waiting for server";
@@ -153,51 +118,71 @@ export function OrderCard({ order }: { order: CustomerOrder }) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-black/8 p-4">
+    <div
+      className={`bg-white rounded-2xl border border-black/8 p-4 ${
+        isCancelled ? "opacity-90" : ""
+      }`}
+    >
       <div className="flex items-center justify-between mb-4">
         <span className="text-[12px] text-text-hint">Order #{order.id}</span>
-        <StatusBadge status={statusKey} />
+        <StatusBadge status={mappedStatus} />
       </div>
 
-      <div className="flex flex-col gap-0 mb-4">
-        {STATUS_STEPS.map((step, i) => {
-          const isDone = i < currentStep;
-          const isActive = i === currentStep;
-          const isLast = i === STATUS_STEPS.length - 1;
+      {isCancelled ? (
+        <div className="mb-4 rounded-2xl bg-red-50 border border-red-100 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+            <Ban className="w-5 h-5 text-red-600" />
+          </div>
+          <div>
+            <p className="text-[14px] font-semibold text-red-700">
+              This order has been cancelled
+            </p>
+            <p className="text-[12px] text-red-600/80 mt-0.5">
+              Placed at {placedLabel}. Contact staff for details.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-0 mb-4">
+          {STATUS_STEPS.map((step, i) => {
+            const isDone = i < currentStep;
+            const isActive = i === currentStep;
+            const isLast = i === STATUS_STEPS.length - 1;
 
-          return (
-            <div key={step.key} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <motion.div
-                  initial={isActive ? { scale: 0.8 } : false}
-                  animate={isActive ? { scale: [0.8, 1.1, 1] } : {}}
-                  transition={{ duration: 0.4 }}
-                  className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${dotClassFor(i)}`}
-                >
-                  <StepDotIcon
-                    isDone={isDone}
-                    isActive={isActive}
-                    stepIndex={i}
-                  />
-                </motion.div>
-                {!isLast && (
-                  <div
-                    className={`w-px flex-1 my-0.5 min-h-5 ${lineClassFor(i)}`}
-                  />
-                )}
+            return (
+              <div key={step.key} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <motion.div
+                    initial={isActive ? { scale: 0.8 } : false}
+                    animate={isActive ? { scale: [0.8, 1.1, 1] } : {}}
+                    transition={{ duration: 0.4 }}
+                    className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 ${dotClassFor(i)}`}
+                  >
+                    <StepDotIcon
+                      isDone={isDone}
+                      isActive={isActive}
+                      stepIndex={i}
+                    />
+                  </motion.div>
+                  {!isLast && (
+                    <div
+                      className={`w-px flex-1 my-0.5 min-h-5 ${lineClassFor(i)}`}
+                    />
+                  )}
+                </div>
+                <div className="pb-4">
+                  <p className="text-[13px] font-medium text-text-primary">
+                    {step.label}
+                  </p>
+                  <p className="text-[11px] text-text-hint mt-0.5">
+                    {subtitleFor(step.key, isDone, isActive)}
+                  </p>
+                </div>
               </div>
-              <div className="pb-4">
-                <p className="text-[13px] font-medium text-text-primary">
-                  {step.label}
-                </p>
-                <p className="text-[11px] text-text-hint mt-0.5">
-                  {subtitleFor(step.key, isDone, isActive)}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="border-t border-black/8 pt-3 flex flex-col gap-2">
         {order.items.map((item, i) => (
