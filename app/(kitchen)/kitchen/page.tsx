@@ -75,9 +75,9 @@ function KitchenDisplay() {
                 {!branch.name && restaurant.name && (
                   <span className="text-text-hint">— No branch assigned</span>
                 )}
-                <span>
+                {/* <span>
                   · {activeCount} active ticket{activeCount !== 1 ? "s" : ""}
-                </span>
+                </span> */}
               </p>
             </div>
           </div>
