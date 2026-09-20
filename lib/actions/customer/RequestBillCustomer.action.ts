@@ -120,8 +120,7 @@ async function RequestBillCustomer(params: { tableId: string }) {
         completed: "your dining has been completed",
         cancelled: "your session has been cancelled",
       };
-      const reason =
-        statusLabel[activeSession.status] ?? "this session stage";
+      const reason = statusLabel[activeSession.status] ?? "this session stage";
       return {
         success: false,
         message: `Cannot request bill — ${reason}. Please contact staff if you need assistance.`,
@@ -129,15 +128,34 @@ async function RequestBillCustomer(params: { tableId: string }) {
       };
     }
 
-    const orderCount = await prisma.order.count({
+    const sessionOrders = await prisma.order.findMany({
       where: { diningSessionId: activeSession.id },
+      select: { id: true, status: true },
     });
 
-    if (orderCount === 0) {
+    const activeOrders = sessionOrders.filter((o) => o.status !== "cancelled");
+
+    if (activeOrders.length === 0) {
       return {
         success: false,
         message: "Cannot request bill — no orders have been placed yet.",
         details: null,
+      };
+    }
+
+    const notServedOrders = activeOrders.filter(
+      (o) => o.status !== "completed",
+    );
+
+    if (notServedOrders.length > 0) {
+      return {
+        success: false,
+        message:
+          "Cannot request bill — some orders are still being prepared or served. Please wait until all items have been served.",
+        details: {
+          notServedCount: notServedOrders.length,
+          totalCount: activeOrders.length,
+        },
       };
     }
 
@@ -148,13 +166,14 @@ async function RequestBillCustomer(params: { tableId: string }) {
         sessionUpdate.finishedAt = new Date();
       }
 
-      const updatedSession = Object.keys(sessionUpdate).length > 0
-        ? await tx.diningSession.update({
-            where: { id: activeSession.id },
-            data: sessionUpdate,
-            select: { id: true, status: true },
-          })
-        : { id: activeSession.id, status: activeSession.status };
+      const updatedSession =
+        Object.keys(sessionUpdate).length > 0
+          ? await tx.diningSession.update({
+              where: { id: activeSession.id },
+              data: sessionUpdate,
+              select: { id: true, status: true },
+            })
+          : { id: activeSession.id, status: activeSession.status };
 
       const updatedTable = await tx.table.update({
         where: { id: tableId },
@@ -173,7 +192,8 @@ async function RequestBillCustomer(params: { tableId: string }) {
     return {
       success: true,
       data: serializePrisma(result) as RequestBillCustomerResult,
-      message: "Bill requested successfully. Staff will come to your table shortly.",
+      message:
+        "Bill requested successfully. Staff will come to your table shortly.",
     };
   } catch (e) {
     return errorAction(e);
