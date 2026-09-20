@@ -25,6 +25,17 @@ import UpdateTableStatusCustomer from "@/lib/actions/customer/UpdateTableStatusC
 import CancelBillRequestCustomer from "@/lib/actions/customer/CancelBillRequestCustomer.action";
 import RequestBillCustomer from "@/lib/actions/customer/RequestBillCustomer.action";
 
+type BurgerSideMenuOrder = {
+  id: string;
+  status: string;
+  placedAt: string;
+  items: Array<{
+    name: string;
+    qty: number;
+    price: number;
+  }>;
+};
+
 type BurgerSideMenuProps = {
   showBurger: boolean;
   setShowBurger: (show: boolean) => void;
@@ -44,6 +55,7 @@ type BurgerSideMenuProps = {
   setShowLanguageModal: (show: boolean) => void;
   onMyOrdersClick: () => void;
   hasOrders: boolean;
+  orders: BurgerSideMenuOrder[];
   onStatusChange?: () => void;
 };
 
@@ -66,6 +78,7 @@ function BurgerSideMenu({
   setShowLanguageModal,
   onMyOrdersClick,
   hasOrders,
+  orders,
   onStatusChange,
 }: BurgerSideMenuProps) {
   const [isCallingStaff, setIsCallingStaff] = useState(false);
@@ -125,8 +138,15 @@ function BurgerSideMenu({
     }
   };
 
+  const notServedOrdersCount = orders.filter(
+    (o) => o.status !== "completed",
+  ).length;
+  const allOrdersServed = hasOrders && notServedOrdersCount === 0;
+  const isRequestBillDisabled =
+    isRequestingBill || !hasOrders || notServedOrdersCount > 0;
+
   const handleRequestBill = async () => {
-    if (!tableId || isRequestingBill || !hasOrders) return;
+    if (!tableId || isRequestingBill || !allOrdersServed) return;
     setIsRequestingBill(true);
     try {
       const res = await RequestBillCustomer({
@@ -355,22 +375,40 @@ function BurgerSideMenu({
               )}
             </div>
           ) : (
-            <button
-              onClick={handleRequestBill}
-              disabled={isRequestingBill || !hasOrders}
-              className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {isRequestingBill ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Receipt className="w-4 h-4" />
+            <div className="flex flex-col gap-2">
+              {hasOrders && notServedOrdersCount > 0 && (
+                <div className="bg-gold-light rounded-2xl p-3 text-center">
+                  <p className="text-[12px] font-medium text-[#9A6C10]">
+                    <Receipt className="w-3.5 h-3.5 inline mr-1.5" />
+                    {notServedOrdersCount === 1
+                      ? "1 order is still being prepared or served."
+                      : `${notServedOrdersCount} orders are still being prepared or served.`}
+                    <span className="block text-[11px] text-[#9A6C10]/80 mt-0.5">
+                      Wait until all items are served before requesting the
+                      bill.
+                    </span>
+                  </p>
+                </div>
               )}
-              {isRequestingBill
-                ? "Requesting…"
-                : !hasOrders
-                  ? "No orders to bill"
-                  : "Request bill"}
-            </button>
+              <button
+                onClick={handleRequestBill}
+                disabled={isRequestBillDisabled}
+                className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {isRequestingBill ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Receipt className="w-4 h-4" />
+                )}
+                {isRequestingBill
+                  ? "Requesting…"
+                  : !hasOrders
+                    ? "No orders to bill"
+                    : notServedOrdersCount > 0
+                      ? "Wait for all orders"
+                      : "Request bill"}
+              </button>
+            </div>
           )}
 
           <button
