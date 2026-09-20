@@ -70,6 +70,13 @@ export default function OrdersPage() {
   const isCallStaffDisabled = isFinishedEating || isPaying;
   const hasOrders = dbOrders.length > 0;
 
+  const notServedOrdersCount = dbOrders.filter(
+    (o) => o.status !== "completed",
+  ).length;
+  const allOrdersServed = hasOrders && notServedOrdersCount === 0;
+  const isRequestBillDisabled =
+    isRequestingBill || !hasOrders || notServedOrdersCount > 0;
+
   const handleCallStaff = async () => {
     if (!tableId || isCallingStaff) return;
     setIsCallingStaff(true);
@@ -125,7 +132,7 @@ export default function OrdersPage() {
   };
 
   const handleRequestBill = async () => {
-    if (!tableId || isRequestingBill || !hasOrders) return;
+    if (!tableId || isRequestingBill || !allOrdersServed) return;
     setIsRequestingBill(true);
     try {
       const res = await RequestBillCustomer({
@@ -307,23 +314,42 @@ export default function OrdersPage() {
             )}
           </div>
         ) : (
-          <motion.button
-            whileTap={!isRequestingBill && hasOrders ? { scale: 0.97 } : {}}
-            onClick={handleRequestBill}
-            disabled={isRequestingBill || !hasOrders}
-            className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {isRequestingBill ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Receipt className="w-4 h-4" />
+          <div className="flex flex-col gap-2">
+            {hasOrders && notServedOrdersCount > 0 && (
+              <div className="bg-gold-light rounded-2xl p-3 text-center">
+                <p className="text-[12px] font-medium text-[#9A6C10]">
+                  <Receipt className="w-3.5 h-3.5 inline mr-1.5" />
+                  {notServedOrdersCount === 1
+                    ? "1 order is still being prepared or served."
+                    : `${notServedOrdersCount} orders are still being prepared or served.`}
+                  <span className="block text-[11px] text-[#9A6C10]/80 mt-0.5">
+                    Wait until all items are served before requesting the bill.
+                  </span>
+                </p>
+              </div>
             )}
-            {isRequestingBill
-              ? "Requesting…"
-              : !hasOrders
-                ? "No orders to bill"
-                : "Request bill"}
-          </motion.button>
+            <motion.button
+              whileTap={
+                !isRequestBillDisabled && allOrdersServed ? { scale: 0.97 } : {}
+              }
+              onClick={handleRequestBill}
+              disabled={isRequestBillDisabled}
+              className="w-full bg-clay text-white rounded-2xl py-3.5 text-[15px] font-medium flex items-center justify-center gap-2 active:bg-clay-dark transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isRequestingBill ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Receipt className="w-4 h-4" />
+              )}
+              {isRequestingBill
+                ? "Requesting…"
+                : !hasOrders
+                  ? "No orders to bill"
+                  : notServedOrdersCount > 0
+                    ? "Wait for all orders"
+                    : "Request bill"}
+            </motion.button>
+          </div>
         )}
       </div>
     </div>
