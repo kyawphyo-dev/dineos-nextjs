@@ -20,7 +20,7 @@ export default function CategoryFilter({ active, onChange }: Props) {
           onClick={() => onChange(category)}
           className={`px-3 py-1.5 rounded-full text-[12px] font-medium border transition-colors ${
             active === category
-              ? "bg-emerald-600 text-white border-emerald-600"
+              ? "bg-bark text-white border-bark"
               : "bg-white text-text-muted border-black/10"
           }`}
         >
