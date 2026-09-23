@@ -1,140 +1,263 @@
 # DineOS
 
-> A full-stack restaurant management and ordering platform built with Next.js.
+> A full-stack SaaS platform for managing buffet and dine-in restaurant operations.
 
-DineOS helps restaurants manage daily operations in one place: orders, kitchen coordination, cashier checkout, receipt printing, and administration.
+DineOS brings restaurant operations into one workspace: QR ordering, menus, tables, dining sessions, kitchen workflow, cashier billing, payments, reservations, staff, and reporting.
 
-> 🚧 Project status: Active development
+> **Project status:** 🚧 Active development - approximately 70% complete  
+> **Current focus:** Completing financial reporting, analytics, real-time updates, and remaining SaaS management features.
 
-## Table of Contents
+## Overview
 
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [System Overview](#system-overview)
-- [Cashier Workflow](#cashier-workflow)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Available Commands](#available-commands)
-- [Project Structure](#project-structure)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
+DineOS is designed for buffet and dine-in restaurants that need a digital workflow from seating a customer through payment and session closure.
 
-## Features
+The platform uses a multi-tenant structure:
 
-- Secure user authentication and session management
-- Restaurant ordering workflow
-- Kitchen order processing
-- Cashier checkout
-- Receipt printing
-- Dashboard and reporting views
-- Menu-item image support
-- Responsive interface for restaurant operations
-- Toast notifications and polished UI interactions
+```text
+Company
+  └── Restaurant
+        └── Branch
+              ├── Staff and roles
+              ├── Zones and tables
+              ├── Menus and packages
+              ├── Reservations and dining sessions
+              ├── Orders and kitchen workflow
+              └── Bills and payments
+```
+
+## Core Workflow
+
+```text
+Customer scans table QR code
+        ↓
+Browse digital menu and place order
+        ↓
+Kitchen receives and prepares the order
+        ↓
+Staff serve the customer and manage the dining session
+        ↓
+Customer requests the bill
+        ↓
+Cashier creates bill, applies discount, records payment
+        ↓
+Receipt is printed and dining session is closed
+```
+
+## Current Features
+
+### Restaurant Management
+
+- Company, restaurant, and branch structure
+- Branch-based menus, tables, payment methods, packages, and staff
+- Role-based staff accounts
+- Secure password and PIN storage
+- Subscription-plan data model
+
+### Menu Management
+
+- Menus and categories
+- Menu item creation and editing
+- Item descriptions, prices, availability, and sold-out status
+- Menu item images through Cloudinary
+- Restaurant packages / combo offers
+- Package-to-menu-item relationships
+
+### Table and Dining Management
+
+- Zones and branch tables
+- Table capacity and unique table numbers per branch
+- Table status tracking:
+  - Available
+  - Reserved
+  - Occupied
+  - Needs attention
+  - Bill requested
+  - Cleaning
+  - Maintenance
+- QR-code support for tables
+- Dining sessions with guest counts, start time, finish time, and close time
+- Reservation support
+
+### Ordering and Kitchen Workflow
+
+- Orders linked to branches, tables, dining sessions, and staff
+- Order items with quantities, prices, and notes
+- Kitchen-oriented order statuses:
+  - Pending
+  - Preparing
+  - Served
+  - Completed
+  - Cancelled
+- Menu-item availability control
+
+### Cashier and Billing
+
+- Bill creation per dining session
+- Receipt numbers
+- Subtotal, discounts, service charge, tax, and grand-total calculation
+- Configurable payment methods by branch
+- Payment recording
+- Received amount and change calculation
+- Payment reference numbers
+- Payment status tracking
+- Cashier assignment for payments
+- Bill statuses:
+  - Unpaid
+  - Partially paid
+  - Paid
+  - Refunded
+  - Void
+- Receipt-printing support
+
+### User Roles
+
+| Role        | Main responsibilities                                                   |
+| ----------- | ----------------------------------------------------------------------- |
+| Owner       | Owns the company, restaurant, branches, and subscription settings       |
+| Manager     | Oversees restaurant and branch operations                               |
+| Front Staff | Manages tables, reservations, and dining sessions                       |
+| Kitchen     | Views orders and updates preparation workflow                           |
+| Cashier     | Creates bills, applies discounts, records payments, and closes sessions |
+| Customer    | Uses QR ordering, browses menus, places orders, and tracks progress     |
 
 ## Technology Stack
 
-| Area                | Technology                          |
-| ------------------- | ----------------------------------- |
-| Framework           | Next.js 16                          |
-| UI                  | React 19, TypeScript                |
-| Styling             | Tailwind CSS 4, shadcn/ui, Radix UI |
-| Database            | PostgreSQL                          |
-| ORM                 | Prisma                              |
-| Backend Services    | Supabase                            |
-| Authentication      | NextAuth.js, bcryptjs               |
-| Media Storage       | Cloudinary, next-cloudinary         |
-| Charts              | Recharts                            |
-| Receipt / PDF tools | jsPDF, html2canvas                  |
-| Icons and animation | Lucide React, Framer Motion         |
+| Area                  | Technology                          |
+| --------------------- | ----------------------------------- |
+| Framework             | Next.js 16                          |
+| Language              | TypeScript                          |
+| UI                    | React 19                            |
+| Styling               | Tailwind CSS 4, shadcn/ui, Radix UI |
+| Database              | PostgreSQL                          |
+| ORM                   | Prisma                              |
+| Backend services      | Supabase                            |
+| Authentication        | NextAuth.js, bcryptjs               |
+| Media storage         | Cloudinary, next-cloudinary         |
+| Charts                | Recharts                            |
+| PDF and receipt tools | jsPDF, html2canvas                  |
+| Animation             | Framer Motion                       |
+| Notifications         | Sonner                              |
 
-## System Overview
+## Data Model
+
+The current database schema includes these main modules:
 
 ```text
-                        ┌──────────────┐
-                        │    Login     │
-                        └──────┬───────┘
-                               │
-                               ▼
-                  ┌────────────────────────┐
-                  │ Restaurant Workspace   │
-                  └───────────┬────────────┘
-                              │
-       ┌──────────────────────┼──────────────────────┐
-       ▼                      ▼                      ▼
-┌────────────┐         ┌────────────┐         ┌────────────┐
-│  Ordering  │         │  Kitchen   │         │  Cashier   │
-└────────────┘         └────────────┘         └────────────┘
-                                                       │
-                                                       ▼
-                                             ┌────────────────┐
-                                             │ Receipt / Sale │
-                                             └───────┬────────┘
-                                                     │
-                                                     ▼
-                                      ┌────────────────────────┐
-                                      │ Admin and Reporting    │
-                                      └────────────────────────┘
+Organization
+├── Company
+├── Owner
+├── Restaurant
+└── Branch
+
+Operations
+├── Zone
+├── Table
+├── Reservation
+├── DiningSession
+└── Staff
+
+Menu
+├── Menu
+├── Category
+├── MenuItem
+├── Package
+└── PackageMenuItem
+
+Ordering and payment
+├── Order
+├── OrderItem
+├── Bill
+├── Payment
+└── PaymentMethod
 ```
 
-DineOS uses Prisma and PostgreSQL for application data, Supabase for backend services, and Cloudinary for menu images or other media assets.
+### Important Relationships
 
-## Cashier Workflow
+```text
+Branch → Menus → Categories → Menu Items
+Branch → Zones → Tables → Dining Sessions → Orders → Order Items
+Dining Session → Bill → Payments
+Branch → Staff, Reservations, Packages, Payment Methods
+```
 
-1. The cashier selects an active order.
-2. The cashier reviews items, quantities, modifiers, taxes, service charges, and discounts.
-3. The cashier chooses a payment method.
-4. The system records payment and updates the order status.
-5. The cashier prints or reprints the receipt.
-6. The sale appears in reports and shift reconciliation.
+## Planned and In-Progress Features
 
-### Planned Cashier Improvements
+The following are planned, partially implemented, or still being developed.
 
-- Split payment support
-- Cash, card, mobile wallet, and bank transfer methods
-- Partial payment and balance tracking
-- Refund and void workflows
-- Manager approval for sensitive actions
-- Cash drawer opening and closing reconciliation
-- Shift-level cashier reports
-- Reprint receipts with audit history
-- Offline-safe checkout queue
-- Barcode scanner and keyboard shortcut support
+### Financial and Analytics
+
+- [ ] Revenue tracking
+- [ ] Expense tracking
+- [ ] Profit and loss reporting
+- [ ] Tax reporting
+- [ ] Daily reports
+- [ ] Popular-menu-item analytics
+- [ ] Staff performance analytics
+- [ ] Customer insights
+- [ ] Advanced analytics dashboard
+
+### Inventory
+
+- [ ] Ingredient and stock tracking
+- [ ] Recipes and recipe items
+- [ ] Supplier management
+- [ ] Purchase orders
+- [ ] Waste tracking
+- [ ] Inventory alerts
+- [ ] Inventory forecasting
+- [ ] Automated reordering
+
+### Real-Time Features
+
+- [ ] Real-time customer order tracking
+- [ ] Real-time kitchen queue updates
+- [ ] Real-time order status notifications
+- [ ] Real-time table and dining-session updates
+- [ ] Staff notifications
+- [ ] Customer notifications
+
+### SaaS and Platform Features
+
+- [ ] Super Admin dashboard
+- [ ] Company Admin dashboard
+- [ ] Subscription management
+- [ ] Feature flags
+- [ ] Usage limits by subscription plan
+- [ ] Full multi-branch plan management
+- [ ] Custom branding
+- [ ] API access for enterprise customers
+
+### Cashier Improvements
+
+- [ ] Split payments
+- [ ] Partial-payment UI
+- [ ] Cash, card, wallet, and bank-transfer flows
+- [ ] Refund workflow
+- [ ] Void workflow with manager approval
+- [ ] Discount permissions and audit history
+- [ ] Cashier shift opening and closing
+- [ ] Cash-drawer reconciliation
+- [ ] Reprint-receipt audit trail
 
 ## Getting Started
 
 ### Prerequisites
 
-Before running DineOS locally, make sure you have:
-
-- Node.js 20 or newer
+- Node.js 20 or later
 - npm
-- A PostgreSQL database
-- A Supabase project
-- A Cloudinary account if media uploads are enabled
+- PostgreSQL database
+- Supabase project
+- Cloudinary account for image upload functionality
 
 ### Installation
-
-Clone the repository:
 
 ```bash
 git clone https://github.com/kyawphyo-dev/dineos-nextjs.git
 cd dineos-nextjs
-```
-
-Install dependencies:
-
-```bash
 npm install
 ```
 
-Create your local environment file:
-
-```bash
-cp .env.example .env.local
-```
-
-Update `.env.local` with your local credentials.
+Create `.env.local` and configure the environment variables required for your database, authentication, Supabase, and Cloudinary integrations.
 
 Generate the Prisma client:
 
@@ -148,7 +271,7 @@ Run database migrations:
 npx prisma migrate dev
 ```
 
-Optionally load seed data:
+Optionally seed the database:
 
 ```bash
 npx prisma db seed
@@ -160,100 +283,84 @@ Start the development server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Environment Variables
-
-Create a `.env.local` file. The exact values and variable names depend on your integrations, but the project will typically require configuration for:
-
-```env
-DATABASE_URL=
-
-NEXTAUTH_URL=
-NEXTAUTH_SECRET=
-
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-
-CLOUDINARY_CLOUD_NAME=
-CLOUDINARY_API_KEY=
-CLOUDINARY_API_SECRET=
-```
-
-Never commit `.env.local` or credentials to GitHub.
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Available Commands
 
 ```bash
 npm run dev      # Start the development server
-npm run build    # Create a production build
+npm run build    # Build for production
 npm run start    # Run the production build
-npm run lint     # Run ESLint checks
+npm run lint     # Run ESLint
+npx prisma studio # Open Prisma Studio
 ```
 
 ## Project Structure
 
 ```text
 app/            # App Router pages, layouts, API routes, and server logic
-components/     # Reusable UI and business-feature components
+components/     # Shared UI and business feature components
 context/        # React context providers
-lib/            # Utilities, helpers, database, and service integrations
+lib/            # Utilities, authentication, database, and service integrations
 prisma/         # Prisma schema, migrations, and seed scripts
 public/         # Static assets
 ```
 
 ## Roadmap
 
-### Core Operations
+### Completed / Mostly Complete
 
-- [ ] Complete order lifecycle management
-- [ ] Kitchen display system improvements
-- [ ] Table and reservation management
-- [ ] Customer profiles and order history
+- [x] Project foundation
+- [x] Database design
+- [x] Authentication foundation
+- [x] Restaurant, branch, staff, and table data models
+- [x] Menu, category, menu-item, and package data models
+- [x] Dining-session, order, bill, and payment data models
+- [x] Core cashier and receipt-printing foundation
 
-### Cashier
+### Remaining Work
 
-- [ ] Split payments
-- [ ] Multiple payment methods
-- [ ] Refund and void support
-- [ ] Cashier shift reconciliation
-- [ ] Discount permissions and manager approval
-- [ ] Receipt audit trail
-
-### Management
-
-- [ ] Role-based access control
-- [ ] Inventory and ingredient tracking
-- [ ] Supplier management
-- [ ] Multi-branch support
-- [ ] Tax and sales reporting
-- [ ] Product performance analytics
-
-### Engineering
-
-- [ ] Unit and integration tests
-- [ ] End-to-end checkout tests
-- [ ] Continuous integration workflow
-- [ ] Production deployment documentation
-- [ ] Error monitoring and observability
+- [ ] Complete and test all role dashboards
+- [ ] Complete QR customer-ordering experience
+- [ ] Complete kitchen display workflow
+- [ ] Finish financial reports and analytics
+- [ ] Implement inventory features
+- [ ] Add real-time updates
+- [ ] Add automated tests
+- [ ] Improve error handling and audit logging
+- [ ] Prepare production deployment
+- [ ] Add screenshots and usage examples to this README
 
 ## Contributing
 
-Contributions, ideas, and bug reports are welcome.
+Contributions, feedback, and feature requests are welcome.
 
-For substantial changes:
+For significant changes:
 
-1. Open an issue describing the proposed change.
-2. Create a feature branch.
-3. Keep the change focused and well tested.
-4. Open a pull request with a clear description.
+1. Open an issue describing the change.
+2. Create a focused feature branch.
+3. Follow TypeScript and ESLint standards.
+4. Test the affected workflow.
+5. Open a pull request with a clear description.
+
+Suggested commit prefixes:
+
+```text
+feat:     New feature
+fix:      Bug fix
+docs:     Documentation update
+style:    Formatting or UI-only update
+refactor: Code restructuring
+test:     Test changes
+chore:    Tooling or maintenance
+```
 
 ## License
 
-No license has been specified yet.
+A license has not been specified yet.
 
-If this repository will be shared publicly, consider adding a license such as MIT, Apache-2.0, or a proprietary license based on how you want others to use the code.
+Before publishing or accepting outside contributions, add a license that matches your intended use, such as MIT, Apache-2.0, or a proprietary license.
 
 ---
 
-Built for restaurant teams with Next.js, React, Prisma, Supabase, and Cloudinary.
+Built with Next.js, React, TypeScript, Prisma, PostgreSQL, Supabase, Tailwind CSS, and Cloudinary.

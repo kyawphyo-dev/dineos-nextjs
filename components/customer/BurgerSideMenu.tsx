@@ -245,15 +245,15 @@ function BurgerSideMenu({
           </div>
           <div className="mt-4 bg-white/10 rounded-2xl p-3.5 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-clay flex items-center justify-center">
+              {/* <div className="w-10 h-10 rounded-xl bg-clay flex items-center justify-center">
                 <span className="text-[14px] font-semibold text-white">
                   {table.tableNumber}
                 </span>
-              </div>
+              </div> */}
               <div>
                 <p className="text-[11px] text-white/60">Table</p>
                 <p className="text-[14px] font-medium text-white">
-                  Table {table.tableNumber}
+                  {table.tableNumber}
                 </p>
               </div>
             </div>
