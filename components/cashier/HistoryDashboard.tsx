@@ -88,6 +88,7 @@ export default function HistoryDashboard() {
               <HistoryRow
                 key={receipt.id}
                 receipt={receipt}
+                selected={selectedId === receipt.id}
                 onClick={() => setSelectedId(receipt.id)}
               />
             ))}
